@@ -1,43 +1,64 @@
-# 0002. Evaluate Microsoft365DSC as the primary configuration engine
+# 0002. Microsoft365DSC as the primary configuration engine — reject-as-primary
 
-- **Status:** Proposed (pending research spike + hands-on container validation)
+- **Status:** Accepted (2026-07-22 — reject-as-primary; supersedes the prior *Proposed* stance)
 - **Date:** 2026-07-22
 - **Deciders:** Project owner + team
-- **Requirements:** FR-4, FR-5, FR-8, FR-10, FR-11, NFR-3, NFR-4, NFR-7
-- **Related:** OPEN-QUESTIONS Q7; `docs/research/03-microsoft365dsc.md`
+- **Requirements:** FR-4, FR-5, FR-8, FR-10, FR-11, NFR-1, NFR-3, NFR-4, NFR-7
+- **Related:** OPEN-QUESTIONS Q7; `docs/research/03-microsoft365dsc.md`; ADR-0001
 
 ## Context
 
-Microsoft365DSC natively models much of M365 with **export** (→ profiles),
+Microsoft365DSC (M365DSC) natively models much of M365 with **export** (→ profiles),
 **drift detection**, and **remediation** built in — potentially delivering several
-core features with far less custom code and strong stability. The owner previously
-struggled to run it (mostly via a Parallels VM on macOS); a clean, purpose-built
-container may resolve that.
+core features with far less custom code. The owner previously wanted it evaluated
+seriously (having struggled to run it via a Parallels VM on macOS), so this ADR was
+opened as *Proposed* pending the Track 03 spike and a possible container proof.
 
-Open risks driving this to "Proposed" rather than "Accepted":
+The Track 03 spike (`docs/research/03-microsoft365dsc.md`) is now complete. Its
+verdict is decisive and does not depend on the container proof: M365DSC's coverage
+is excellent, but coverage is not the binding constraint — **three tenet-level
+conflicts are**.
 
-- Does it run on **PowerShell 7 / Linux**, or require **Windows PowerShell**?
-- Is its **auth model** compatible with our interactive/device-code decision (0001)?
-- Its **large dependency footprint** vs the minimal-deps tenet.
-- **MOF / credential handling** vs the no-persisted-secrets tenet.
+## Decision
 
-## Decision (proposed)
+**Reject Microsoft365DSC as the primary engine.** Build a **custom Graph/Exchange
+Online engine** implementing the proven `export → normalize → diff → ordered
+idempotent apply` loop (research 06 §7) on our own pinned cmdlets and diff renderer.
+**Selectively reuse** M365DSC's cross-platform pieces — the ReverseDSC **export**
+and the **offline delta-report** tooling — where they add value, but **not** its
+apply/monitor (LCM) path.
 
-Adopt Microsoft365DSC as the primary engine for profiles/drift/remediation **iff**
-the research spike and a hands-on container proof confirm it can run reliably
-(Linux + pwsh preferred; an isolated, portable Windows-based container is an
-acceptable fallback) with an auth model compatible with our security tenets.
-Otherwise, **fall back** to a custom Graph/EXO engine that reuses DSC concepts
-(export → diff → ordered idempotent apply).
+The owner ratified this at the Phase 2 checkpoint **without requiring the container
+proof** — the evidence is strong enough that the build direction (custom engine) is
+unchanged either way; the proof would only affect *how much* export tooling we borrow.
+
+Why reject-as-primary (from Track 03):
+
+- **Runtime (NFR-4).** The apply/monitor loop depends on the DSC **Local
+  Configuration Manager**, which is **Windows-only** — removed from DSC 2.0 /
+  PowerShell 7 and abandoned in DSC v3. Our target is Linux + pwsh 7.
+- **Auth (ADR-0001).** No device-code / interactive-delegated **apply** path; it is
+  app/certificate-centric — the tension already flagged in ADR-0001.
+- **Secrets (NFR-1).** Credentials are stored **plaintext-by-default in the compiled
+  MOF** — a direct no-credentials-on-disk violation.
 
 ## Consequences
 
-- If viable: accelerates the MVP and future breadth substantially.
-- Pulls many dependent modules — mitigate via strict version pinning and a minimal
-  enabled-resource set.
-- Constrains container strategy; must guarantee no plaintext credentials in MOF/exports.
+- Unblocks the build on a **portable Linux + pwsh 7 custom engine** aligned with
+  ADR-0001 and NFR-1/NFR-4; resolves the ADR-0001 reconciliation risk.
+- **More custom code** and slower breadth expansion than adopting DSC wholesale —
+  mitigated by reusing M365DSC's export tooling and the already-mapped Graph/EXO
+  surface (research 01/02) and the ~11-control MVP slice (research 05, ADR-0003).
+- The architecture stays **engine-agnostic at the seam** (research 06 §7.3): if
+  Microsoft ever ships a cross-platform DSC apply path, revisiting is cheap.
+- We inherit DSC's **idempotency discipline** (Test-before-Set) as the model for our
+  own deterministic remediation (FR-11), without inheriting its runtime.
 
 ## Alternatives considered
 
-- **Custom engine from day one** — full control, more code, slower breadth.
-- **Skip DSC** — rejected; the owner wants it evaluated and it offers large leverage.
+- **Adopt M365DSC as primary** — rejected: Windows-only apply (NFR-4), incompatible
+  auth (ADR-0001), plaintext MOF credentials (NFR-1).
+- **Windows-based container to host DSC** — rejected for MVP: breaks the Linux/pwsh-7
+  portability tenet and the memory-only-credential posture; heavy.
+- **Vendor everything (Monkey365-style, no official modules)** — rejected: more code
+  and less stability than pinned official Graph/EXO modules (NFR-7).
