@@ -8,20 +8,23 @@
     project drives. It makes no system-level changes, requires no elevation, and
     never authenticates to any tenant — it only talks to the PowerShell Gallery.
 
+    The required set and its PINNED versions come from the M365Configurator
+    module itself (Get-M365RequiredModule) — a single source of truth shared with
+    the app (FR-1, NFR-7). Idempotency uses the same satisfied rule the app uses
+    (Get-M365ModuleStatus): an install is skipped when the pin is already met.
+
     Reflecting the project's design tenets:
       * Loud, fast failure  -> StrictMode + $ErrorActionPreference = 'Stop'
       * Verbose by default   -> every step is announced
       * Minimal footprint    -> installs into the CurrentUser scope only
+      * Stability            -> required modules install at their pinned version
 
 .PARAMETER Full
     Also install the complete Microsoft.Graph SDK meta-module (large; pulls ~40
-    sub-modules). By default only Microsoft.Graph.Authentication is installed,
-    which is enough to connect and to load specific Graph sub-modules on demand.
+    sub-modules). Unpinned exploration extra — not part of the required set.
 
 .PARAMETER IncludeM365Dsc
-    Also install Microsoft365DSC (Desired State Configuration for M365). Large and
-    pulls many dependencies; off by default. Included because DSC is an explicit
-    area of interest for this project (see docs/OPEN-QUESTIONS.md).
+    Also install Microsoft365DSC. Large; unpinned exploration extra.
 
 .PARAMETER Force
     Reinstall/refresh modules even if a satisfying version is already present.
@@ -48,19 +51,21 @@ function Write-Ok   { param([string] $Message) Write-Host "  ✓ $Message" -Fore
 function Write-Skip { param([string] $Message) Write-Host "  • $Message" -ForegroundColor DarkGray }
 
 # -----------------------------------------------------------------------------
-# The dependency set. Keep this list small and deliberate (design tenet #2).
-#
-# NOTE ON VERSION PINNING (design tenet #6): stability is tied to the module
-# syntax staying constant, so production deployments SHOULD pin exact versions.
-# We do not hard-pin here yet — pinning strategy is an open design decision
-# (see docs/OPEN-QUESTIONS.md). For now we install the latest available and
-# report the exact versions so they can be recorded/pinned later.
+# Single source of truth: import the app module and read its declared required
+# set + pins. This is the same list the app detects/heals against at runtime, so
+# a fresh bootstrap can never drift from what the app expects (fixes the old
+# duplicated, unpinned list).
 # -----------------------------------------------------------------------------
-$modules = [System.Collections.Generic.List[hashtable]]::new()
-$modules.Add(@{ Name = 'Microsoft.Graph.Authentication'; Reason = 'Connect/disconnect + on-demand Graph sub-module loading' })
-$modules.Add(@{ Name = 'ExchangeOnlineManagement';       Reason = 'Exchange Online configuration' })
-if ($Full)          { $modules.Add(@{ Name = 'Microsoft.Graph'; Reason = 'Full Microsoft Graph SDK (all sub-modules)' }) }
-if ($IncludeM365Dsc){ $modules.Add(@{ Name = 'Microsoft365DSC'; Reason = 'Desired State Configuration for M365' }) }
+$modulePath = Join-Path $PSScriptRoot '..' 'src' 'M365Configurator' 'M365Configurator.psd1'
+Import-Module $modulePath -Force
+
+$targets = [System.Collections.Generic.List[hashtable]]::new()
+foreach ($req in Get-M365RequiredModule) {
+    $targets.Add(@{ Name = $req.Name; Version = $req.Version; Reason = $req.Reason })
+}
+# Opt-in exploration extras: not part of the pinned required set.
+if ($Full)           { $targets.Add(@{ Name = 'Microsoft.Graph';  Version = $null; Reason = 'Full Microsoft Graph SDK (all sub-modules) — unpinned extra' }) }
+if ($IncludeM365Dsc) { $targets.Add(@{ Name = 'Microsoft365DSC'; Version = $null; Reason = 'Desired State Configuration for M365 — unpinned extra' }) }
 
 Write-Step "m365-configurator module bootstrap"
 Write-Host "    PowerShell : $($PSVersionTable.PSVersion) ($($PSVersionTable.Platform))"
@@ -83,45 +88,60 @@ Write-Ok "PSGallery reachable and trusted"
 Write-Host ""
 
 # -----------------------------------------------------------------------------
-# Install each module if a satisfying version is not already present.
+# Install each target. Pinned (required) modules install at their exact version
+# and are skipped when the pin is already satisfied; unpinned extras install the
+# latest and are skipped when any version is present.
 # -----------------------------------------------------------------------------
-foreach ($module in $modules) {
-    $name = $module.Name
-    Write-Step "$name  —  $($module.Reason)"
+foreach ($target in $targets) {
+    $name = $target.Name
+    $pin  = $target.Version
+    Write-Step "$name  —  $($target.Reason)"
 
-    $installed = Get-Module -ListAvailable -Name $name |
-        Sort-Object Version -Descending |
-        Select-Object -First 1
-
-    if ($installed -and -not $Force) {
-        Write-Skip "already installed: v$($installed.Version) (use -Force to refresh)"
-        continue
+    if ($pin) {
+        $status = Get-M365ModuleStatus -Required @(
+            [pscustomobject]@{ Name = $name; Version = $pin; Reason = $target.Reason }
+        )
+        if ($status.Satisfied -and -not $Force) {
+            Write-Skip "already satisfied: v$($status.InstalledVersion) meets pin v$pin (use -Force to refresh)"
+            continue
+        }
+        Install-Module -Name $name -RequiredVersion $pin -Scope CurrentUser -AllowClobber -Force -Repository PSGallery
+        Write-Ok "installed v$pin (pinned)"
     }
-
-    Install-Module -Name $name -Scope CurrentUser -AllowClobber -Force -Repository PSGallery
-    $now = Get-Module -ListAvailable -Name $name |
-        Sort-Object Version -Descending |
-        Select-Object -First 1
-    Write-Ok "installed v$($now.Version)"
+    else {
+        $installed = Get-Module -ListAvailable -Name $name |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+        if ($installed -and -not $Force) {
+            Write-Skip "already installed: v$($installed.Version) (unpinned extra; use -Force to refresh)"
+            continue
+        }
+        Install-Module -Name $name -Scope CurrentUser -AllowClobber -Force -Repository PSGallery
+        $now = Get-Module -ListAvailable -Name $name |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+        Write-Ok "installed v$($now.Version) (latest)"
+    }
 }
 Write-Host ""
 
 # -----------------------------------------------------------------------------
-# Report exactly what is present, so versions can be recorded and pinned.
+# Report exactly what is present, against the (pinned where applicable) target.
 # -----------------------------------------------------------------------------
 Write-Step "Installed module summary"
-$report = foreach ($module in $modules) {
-    $m = Get-Module -ListAvailable -Name $module.Name |
+$report = foreach ($target in $targets) {
+    $m = Get-Module -ListAvailable -Name $target.Name |
         Sort-Object Version -Descending |
         Select-Object -First 1
     [pscustomobject]@{
-        Module  = $module.Name
-        Version = if ($m) { $m.Version.ToString() } else { 'NOT FOUND' }
+        Module    = $target.Name
+        Pinned    = if ($target.Version) { $target.Version } else { '(latest)' }
+        Installed = if ($m) { $m.Version.ToString() } else { 'NOT FOUND' }
     }
 }
 $report | Format-Table -AutoSize | Out-String | Write-Host
 
-if ($report.Version -contains 'NOT FOUND') {
+if ($report.Installed -contains 'NOT FOUND') {
     throw "One or more modules failed to install. See the summary above."
 }
 

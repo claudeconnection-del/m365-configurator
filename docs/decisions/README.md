@@ -27,3 +27,4 @@ reasoning survives and anyone picking up the work understands *why*, not just
 | [0008](0008-profile-format-yaml-authored-json-canonical.md) | Profile format: YAML authored, JSON canonical | Accepted |
 | [0009](0009-profile-sharing-and-versioning.md) | Profile sharing & versioning: Git-committed, export, tagged baselines | Accepted |
 | [0010](0010-license-apache-2.md) | License: Apache-2.0 | Accepted |
+| [0011](0011-self-healing-remediation-for-recoverable-preconditions.md) | Self-healing: offer remediation for recoverable preconditions | Accepted |
