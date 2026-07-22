@@ -52,6 +52,11 @@ and Jira issues (project `MCA`) can reference it. Status legend: `[ ]` not start
   pinned; upgrades are deliberate.
 - [ ] **NFR-8 — Reproducible dev/build.** A fresh clone reaches a working dev
   environment via the documented bootstrap with no hidden steps.
+- [ ] **NFR-9 — Readability & visual inspection.** All human-facing output — code,
+  profiles, logs, diffs, and dry-run previews — is formatted for fast, unambiguous
+  visual inspection: consistent structure, aligned columns where it helps, clear
+  grouping, and stable ordering so diffs stay meaningful. Enforced by formatters/
+  linters where practical and checked in review.
 
 ## Traceability
 

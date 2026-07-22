@@ -48,6 +48,9 @@ These are the non-negotiables the whole project is built around. See
    syntax is stable, this tool is stable. Version-pinning is a first-class concern.
 7. **Reviewable, deterministic changes.** Dry-run first; diffs and remediations
    are predictable and explainable.
+8. **Readability for the human inspecting it.** Code, profiles, logs, diffs, and
+   dry-run output are formatted for fast visual inspection — consistent, aligned,
+   and scannable. If a human has to squint to verify what will change, that's a bug.
 
 ## Quickstart — clone and develop anywhere
 

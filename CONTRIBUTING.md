@@ -52,6 +52,9 @@ Every change is measured against these (full, testable list in
 - **Minimal dependencies.** New dependencies must be justified in review.
 - **Dry-run first.** Any change-applying feature ships with a preview path.
 - **Version-pinning discipline.** Stability is tied to pinned module versions.
+- **Readability for visual inspection.** Format code, profiles, logs, and diffs so
+  a human can scan and verify them at a glance. Consistent, aligned, and scannable
+  beats clever or dense. Reviewers reject output that's hard to eyeball.
 
 ## 6. Security reporting
 

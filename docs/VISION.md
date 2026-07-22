@@ -48,6 +48,9 @@ reviewable, and auditable**:
 - **Audit-grade, verbose logging** with easy retrieval.
 - **Loud, fast failure** with proper error handling.
 - **Stable** for as long as the underlying PowerShell module syntax is stable.
+- **Readable by design.** Output built for easy visual inspection — a reviewer
+  should be able to scan a profile, log, or dry-run diff and know exactly what
+  it means without effort.
 
 ## Explicitly open for revision
 
