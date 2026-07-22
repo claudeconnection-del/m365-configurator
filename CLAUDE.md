@@ -55,8 +55,12 @@ already available). Always pass the Cloud ID above.
 | Branch | Role |
 | --- | --- |
 | `claude/m365-exchange-config-app-1hko7b` | **Default / main working branch.** All feature work lands here (see [CONTRIBUTING.md](CONTRIBUTING.md)). |
-| `claude/mca-sub-agent-research-p1g24u` | Phase 1 research corpus (tracks 03/05/06 committed here). |
-| `claude/repo-status-workflow-6uxdf1` | The resume/status workflow (this tooling). |
+
+The Phase 1 research corpus and the resume-workflow tooling were built on
+short-lived branches (`claude/mca-sub-agent-research-p1g24u`,
+`claude/repo-status-workflow-6uxdf1`), then **merged into the default branch and
+removed**. New work branches off the default branch per
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 Never push to a branch other than your designated one without explicit
 permission. Reference Jira issues in commits where applicable (e.g. `MCA-12: …`).

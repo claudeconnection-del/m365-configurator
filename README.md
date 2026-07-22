@@ -5,11 +5,13 @@
 > reviewable configuration profiles — with verbose audit logging, dry-run
 > previews, drift detection, and deterministic remediation.
 
-**Status:** 🌱 Scaffolding / research phase. There is no application code yet — this
-commit establishes a reproducible development environment and captures the project
-vision so work can be picked up on any machine. See [`docs/ROADMAP.md`](docs/ROADMAP.md)
-for what comes next and [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md) for
-decisions that are still open.
+**Status:** 🧭 Design ratified, pre-build. Phases 0–2 are complete — the reproducible
+dev environment, the Phase 1 research corpus, and the Phase 2 design decisions
+(recorded as [ADRs](docs/decisions/)) are all in place. Next is **Phase 3**: breaking
+the design into Jira (`MCA`) work items, then the build. There is no application code
+yet. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
+[`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md); run `/resume` (or say "resume") to
+get a live status.
 
 ---
 
@@ -119,5 +121,5 @@ rights, no system changes) and prints the versions it installed.
 
 ## License
 
-TBD — see [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md). Until a license is
-chosen, this code is "all rights reserved" by default.
+Licensed under the **Apache License 2.0** — see [`LICENSE`](LICENSE) and
+[ADR-0010](docs/decisions/0010-license-apache-2.md).
