@@ -60,6 +60,39 @@ and Jira issues (project `MCA`) can reference it. Status legend: `[ ]` not start
 
 ## Traceability
 
-Every FR/NFR should map to: at least one ADR (design), at least one Jira issue
-(`MCA`), and at least one test. This mapping is filled in as the project moves
-from design into build.
+Every FR/NFR maps to: at least one ADR (design), at least one Jira issue
+(`MCA`), and — from Phase 4 on — at least one test. The Jira mapping below was
+established in **Phase 3 planning** (2026-07-22); the **test** column is filled
+in as each slice is built.
+
+The MCA backlog is organised into eight capability/workstream **epics**:
+MCA-1 Connection & credential foundation · MCA-3 Profile engine ·
+MCA-4 Microsoft Graph provider · MCA-5 Exchange Online provider ·
+MCA-6 Change engine (dry-run/apply/drift/remediate) · MCA-7 Audit logging &
+observability · MCA-8 Interfaces (web dashboard + CLI) · MCA-9 Packaging &
+release (later-phase stub). The `v1-slice`-labelled stories are the ~11-control
+vertical slice from [research 05 §4](research/05-security-baselines.md).
+
+| Req | ADR(s) | Jira (`MCA`) |
+| --- | --- | --- |
+| FR-1 | ADR-0005 | MCA-2 |
+| FR-2 | ADR-0001 | MCA-10, MCA-11 |
+| FR-3 | ADR-0001 | MCA-12 |
+| FR-4 | ADR-0002, ADR-0003 | epics MCA-4 / MCA-5; controls MCA-22…MCA-34; surfaced via MCA-36 |
+| FR-5 | ADR-0008, ADR-0009 | MCA-13, MCA-14 |
+| FR-6 | ADR-0009 | MCA-15 |
+| FR-7 | ADR-0008 | MCA-16 (applies to MCA-23/24/31) |
+| FR-8 | — | MCA-17, MCA-21 |
+| FR-9 | — | MCA-18 |
+| FR-10 | — | MCA-19 |
+| FR-11 | — | MCA-20 |
+| FR-12 | ADR-0006 | MCA-35, MCA-36 |
+| NFR-1 | ADR-0001 | MCA-10, MCA-12 (validated by MCA-9) |
+| NFR-2 | — | MCA-7 |
+| NFR-3 | — | MCA-2, MCA-9 |
+| NFR-4 | ADR-0007 | MCA-9 |
+| NFR-5 | — | MCA-35 |
+| NFR-6 | — | MCA-18, MCA-21 |
+| NFR-7 | — | MCA-2, MCA-13 |
+| NFR-8 | — | MCA-2, MCA-9 |
+| NFR-9 | ADR-0006 | MCA-13, MCA-17, MCA-36 |

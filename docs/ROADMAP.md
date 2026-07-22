@@ -30,10 +30,16 @@ mirrored in Confluence.
 - Recorded as ADRs in [`decisions/`](decisions/). **Reviewed with the project
   owner before build.**
 
-## Phase 3 — Project planning
+## Phase 3 — Project planning  ✅ (backlog created 2026-07-22)
 
 - Break the design into epics/stories in Jira (`MCA`), mapped to FR/NFR IDs.
+  **Done:** 8 capability/workstream epics (MCA-1, MCA-3…MCA-9) + 28 stories; the
+  ~11-control v1 vertical slice is fully decomposed and labelled `v1-slice`.
+  FR/NFR → issue mapping is in [`REQUIREMENTS.md`](REQUIREMENTS.md#traceability).
 - Define the parallelizable workstreams and the author/reviewer agent split.
+  The workstream epics *are* the parallel tracks; the author/reviewer split is
+  fixed in [`CONTRIBUTING.md`](../CONTRIBUTING.md) (an agent never reviews its
+  own code).
 
 ## Phase 4 — Build
 
