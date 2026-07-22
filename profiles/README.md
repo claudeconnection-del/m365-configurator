@@ -13,8 +13,11 @@ Saved configuration profiles live here.
   share (subject to review). Machine-specific or sensitive exports belong under
   `profiles/local/`, which is git-ignored.
 
-The concrete profile schema is an open design decision — see
-[`../docs/OPEN-QUESTIONS.md`](../docs/OPEN-QUESTIONS.md) (Q8/Q9).
+The profile format is **settled**: authored in **YAML**, with **JSON** as the
+canonical (diff/interchange) form (`.psd1` is a documented minimal-deps fallback) —
+see [ADR-0008](../docs/decisions/0008-profile-format-yaml-authored-json-canonical.md).
+Sharing & versioning (git-committed, credential-free, single-file export, known-good
+baselines as git tags) is [ADR-0009](../docs/decisions/0009-profile-sharing-and-versioning.md).
 
 > If you ever find yourself about to save a secret into a profile: stop. That is a
 > bug in the design, not a thing to work around. Raise it.

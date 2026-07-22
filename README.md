@@ -5,13 +5,13 @@
 > reviewable configuration profiles — with verbose audit logging, dry-run
 > previews, drift detection, and deterministic remediation.
 
-**Status:** 🧭 Design ratified, pre-build. Phases 0–2 are complete — the reproducible
-dev environment, the Phase 1 research corpus, and the Phase 2 design decisions
-(recorded as [ADRs](docs/decisions/)) are all in place. Next is **Phase 3**: breaking
-the design into Jira (`MCA`) work items, then the build. There is no application code
-yet. See [`docs/ROADMAP.md`](docs/ROADMAP.md) and
-[`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md); run `/resume` (or say "resume") to
-get a live status.
+**Status:** 🔨 **Phase 4 — build in progress.** Phases 0–3 are complete: the reproducible
+dev environment, the Phase 1 research corpus, the Phase 2 design decisions (recorded as
+[ADRs 0001–0011](docs/decisions/)), and the Phase 3 Jira (`MCA`) backlog (8 workstream
+epics + 28 stories). The first module has landed — [`src/M365Configurator/`](src/M365Configurator)
+with a **self-healing** module preflight (ADR-0011) — developed test-first (see
+[`tests/`](tests)). See [`docs/ROADMAP.md`](docs/ROADMAP.md); run `/resume` (or say
+"resume") for a live, reconciled status.
 
 ---
 
@@ -20,8 +20,9 @@ get a live status.
 A consultant/operator tool that:
 
 - **Bootstraps itself** — makes sure the required PowerShell modules
-  (`Microsoft.Graph`, `ExchangeOnlineManagement`, and others as relevant) are
-  installed and imported.
+  (`Microsoft.Graph`, `ExchangeOnlineManagement`, …) are installed and imported,
+  and is **self-healing**: if one is missing or outdated it offers a consented fix
+  (source + the exact command), never a dead-end (ADR-0011).
 - **Connects and disconnects on demand** while running, with **full credential
   cleanup** between sessions — nothing sensitive is persisted.
 - **Exposes the configurable surface** of the underlying PowerShell modules in a
@@ -68,8 +69,10 @@ Then pick **one** of:
 
 Open the folder in VS Code with the **Dev Containers** extension and choose
 **"Reopen in Container"** (or use the Dev Containers CLI). The container ships
-PowerShell 7 and runs [`scripts/install-modules.ps1`](scripts/install-modules.ps1)
-automatically, so the M365 modules are ready when it finishes building.
+PowerShell 7 and, on create, runs [`scripts/install-modules.ps1`](scripts/install-modules.ps1)
+and [`scripts/install-dev-tools.ps1`](scripts/install-dev-tools.ps1) — so the M365
+modules **and** the test runner (Pester) are ready, and you can run
+`Invoke-Pester -Path tests/` as soon as it finishes building.
 
 ### Option B — Local PowerShell 7+
 
@@ -89,23 +92,44 @@ rights, no system changes) and prints the versions it installed.
 > from the PowerShell Gallery. Connecting to M365 is an explicit, interactive step
 > that will live in the application itself.
 
+## Running the tests
+
+The project is built **test-first** with Pester 5+. Install the dev tooling once,
+then run the suite:
+
+```bash
+pwsh -NoProfile -File scripts/install-dev-tools.ps1        # one-time; installs pinned Pester
+pwsh -NoProfile -Command "Invoke-Pester -Path tests/"
+```
+
+The dev container (Option A) provisions Pester automatically, so there you can run
+`Invoke-Pester -Path tests/` directly.
+
 ## Repository layout
 
 ```
 .
 ├── README.md                 ← you are here
+├── CLAUDE.md                 ← orientation + the /resume workflow (for AI sessions)
 ├── CONTRIBUTING.md           ← dev workflow, branch strategy, review process
-├── .devcontainer/            ← reproducible dev environment (pwsh + modules)
-├── scripts/                  ← bootstrap & module-install helpers
+├── LICENSE                   ← Apache-2.0 (ADR-0010)
+├── .devcontainer/            ← reproducible dev environment (pwsh + modules + Pester)
+├── .claude/                  ← repo-scoped Claude commands (e.g. /resume)
+├── src/
+│   └── M365Configurator/     ← the PowerShell module (manifest + Public/ functions)
+├── tests/                    ← Pester specs (run with: Invoke-Pester -Path tests/)
+├── scripts/                  ← bootstrap, module-install, and dev-tooling helpers
 │   ├── bootstrap.ps1         ← one-shot setup from PowerShell
 │   ├── bootstrap.sh          ← one-shot setup from a POSIX shell
-│   └── install-modules.ps1   ← installs/reports the M365 PowerShell modules
+│   ├── install-modules.ps1   ← installs/reports the pinned M365 modules (single source of truth)
+│   ├── install-dev-tools.ps1 ← installs the pinned test runner (Pester)
+│   └── repo-status.sh        ← repo side of the /resume reconciliation
 ├── docs/
 │   ├── VISION.md             ← the north star, captured verbatim in intent
-│   ├── REQUIREMENTS.md       ← functional & non-functional requirements
+│   ├── REQUIREMENTS.md       ← functional & non-functional requirements + traceability
 │   ├── ROADMAP.md            ← phased plan: research → design → build
-│   ├── OPEN-QUESTIONS.md     ← decisions awaiting input
-│   └── decisions/            ← Architecture Decision Records (ADRs)
+│   ├── OPEN-QUESTIONS.md     ← decisions log (resolved items point to ADRs)
+│   └── decisions/            ← Architecture Decision Records (ADRs 0001–0011)
 ├── profiles/                 ← saved configuration profiles (config only, NEVER secrets)
 ├── .gitignore                ← security-first: secrets/tokens/logs never committed
 ├── .gitattributes
@@ -116,7 +140,8 @@ rights, no system changes) and prints the versions it installed.
 
 - **Understand the goal:** [`docs/VISION.md`](docs/VISION.md)
 - **See the plan:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- **Help decide open items:** [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md)
+- **Review the decisions:** [`docs/decisions/`](docs/decisions/) (ADRs 0001–0011)
+- **Run the tests:** `Invoke-Pester -Path tests/` (see [Running the tests](#running-the-tests))
 - **Start contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
 ## License

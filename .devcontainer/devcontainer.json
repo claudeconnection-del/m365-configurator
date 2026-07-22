@@ -1,7 +1,8 @@
 {
   // Reproducible development environment for m365-configurator.
-  // Ships PowerShell 7 and installs the required M365 modules on create, so a
-  // fresh `git clone` + "Reopen in Container" is enough to start developing.
+  // Ships PowerShell 7 and, on create, installs the required M365 modules AND the
+  // dev/test tooling (Pester), so a fresh `git clone` + "Reopen in Container" is
+  // enough to develop and to run `Invoke-Pester -Path tests/`.
   "name": "m365-configurator",
   "image": "mcr.microsoft.com/devcontainers/base:bookworm",
 
@@ -13,9 +14,9 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  // Install the M365 PowerShell modules once the container is built.
-  // Runs as the non-root 'vscode' user; installs into the CurrentUser scope.
-  "postCreateCommand": "pwsh -NoProfile -File scripts/install-modules.ps1",
+  // Install the M365 PowerShell modules and dev/test tooling once the container
+  // is built. Runs as the non-root 'vscode' user; installs into CurrentUser scope.
+  "postCreateCommand": "pwsh -NoProfile -File scripts/install-modules.ps1 && pwsh -NoProfile -File scripts/install-dev-tools.ps1",
 
   "customizations": {
     "vscode": {

@@ -68,7 +68,7 @@ permission. Reference Jira issues in commits where applicable (e.g. `MCA-12: …
 ## Roadmap phase (where we are)
 
 `Phase 0 bootstrap ✅ → Phase 1 research ✅ → Phase 2 design checkpoint ✅ (decisions
-ratified as ADR-0002 + ADR-0005…0010) → Phase 3 Jira planning ✅ (MCA backlog:
+ratified as ADRs 0001–0011) → Phase 3 Jira planning ✅ (MCA backlog:
 8 workstream epics + 28 stories; v1 slice fully decomposed, 2026-07-22) →
 **Phase 4 build** → Phase 5 harden & ship.`
 

@@ -74,29 +74,17 @@ desktop.ini
 *.swo
 *~
 
-# --- Language build artifacts (app language TBD; cover the common cases) ---
+# --- Build artifacts (PowerShell 7 per ADR-0005; Node for the local dashboard per ADR-0006) ---
 # .NET / PowerShell
 bin/
 obj/
 *.nupkg
-# Node
+# Node (local web dashboard, ADR-0006)
 node_modules/
 dist/
 build/
 *.tsbuildinfo
 npm-debug.log*
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.pytest_cache/
-.mypy_cache/
-# Go
-*.exe
-*.test
-# Rust
-target/
 
 # --- Containers / tooling ---
 *.pid

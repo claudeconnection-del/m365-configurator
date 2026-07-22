@@ -36,4 +36,5 @@ $here = Split-Path -Parent $PSCommandPath
 & (Join-Path $here 'install-modules.ps1') -Full:$Full -IncludeM365Dsc:$IncludeM365Dsc -Force:$Force
 
 Write-Host ""
-Write-Host "Ready. See docs/ROADMAP.md for what to build next." -ForegroundColor Green
+Write-Host "Ready. Install dev/test tooling with scripts/install-dev-tools.ps1, then run: Invoke-Pester -Path tests/" -ForegroundColor Green
+Write-Host "See docs/ROADMAP.md for the phased plan and CONTRIBUTING.md for the workflow." -ForegroundColor DarkGray

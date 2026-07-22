@@ -14,6 +14,14 @@ Verify your environment:
 pwsh -NoProfile -File scripts/install-modules.ps1   # idempotent; safe to re-run
 ```
 
+Install the dev/test tooling and run the suite (the code is built **test-first**
+with Pester 5+; the dev container provisions Pester automatically):
+
+```powershell
+pwsh -NoProfile -File scripts/install-dev-tools.ps1   # one-time; installs pinned Pester
+Invoke-Pester -Path tests/
+```
+
 ## 2. Branching
 
 - All work for this initiative lands on **`claude/m365-exchange-config-app-1hko7b`**.
