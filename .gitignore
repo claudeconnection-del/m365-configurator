@@ -4,7 +4,12 @@
 # and anything tenant-identifying must NEVER be committed. When in doubt, add it.
 # =============================================================================
 
-# --- Secrets, credentials, tokens ---
+# --- Secrets, credentials, tokens (backstop; the app itself never writes these) ---
+# Match secret-bearing files by EXTENSION or WELL-KNOWN NAME, not by the mere
+# presence of "credential"/"token"/"secret" as a substring — a broad substring
+# match silently drops legitimate source and docs (e.g. CredentialProvider.ps1 or
+# 04-...-credential-cleanup.md). Silent drops violate our loud-failure tenet.
+# Anything genuinely sensitive/machine-specific belongs under a local/ path (below).
 *.pem
 *.pfx
 *.p12
@@ -15,22 +20,30 @@
 *.pass
 *.secret
 *.secrets
+*.credential
+*.credentials
+credentials.json
+credentials.xml
+credentials.yml
+credentials.yaml
 secrets/
 .secrets/
-credentials*
-*credential*
-*.credential
 .env
 .env.*
 !.env.example
-*.token
-token*
-*.tokencache
-.tokencache/
-.msal*
+*.publishsettings
+
+# Auth / token caches (Microsoft.Graph, MSAL, Azure) and EXO temp modules — never commit.
+# Paths confirmed in docs/research/04-authentication-and-credential-cleanup.md.
 .graph/
 .azure/
-*.publishsettings
+.msal/
+mg.msal.cache*
+*.msalcache*
+ecache.bin*
+*.tokencache
+.tokencache/
+tmpEXO*.psm1
 
 # --- Runtime / local-only config & profiles ---
 # Profiles under profiles/ are config-only and SHOULD be shareable. Anything
