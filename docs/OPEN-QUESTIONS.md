@@ -1,22 +1,24 @@
 # Open questions
 
 Decisions awaiting input. Each becomes an ADR in [`decisions/`](decisions/) once
-resolved. Most are best answered *after* Phase 1 research, but a few shape that
-research and are worth settling early (marked ⏱️ **early**).
+resolved. The **Phase 2 design checkpoint (2026-07-22)** resolved the architecture,
+interface, and profile questions with the project owner — see the Resolved table.
 
 ## Architecture & runtime
 
-- ⏱️ **Q1 — Core language/runtime.** The app fundamentally drives PowerShell
-  modules. Options: (a) pure PowerShell 7 module/app; (b) a thin front-end in
-  another language (Python/Go/Node) that invokes `pwsh`. Trade-off: minimal
-  dependencies & syntax-stability (favors pure pwsh) vs. richer UI/tooling.
-  _To be recommended at the design checkpoint (see `docs/research/06-...`)._
-- ⏱️ **Q2 — Interface.** CLI, TUI, or a locally-served web UI? "Easy and
-  satisfying to interact with" + "containerized" leans toward a local web UI or a
-  polished TUI. _To be recommended at the design checkpoint._
-- **Q3 — Container runtime model.** One-shot CLI container vs. long-running service
-  container hosting the UI. Where is it expected to run (consultant laptop
-  per-engagement vs. a shared server)? _Design checkpoint._
+- ✅ **Q1 — Core language/runtime.** **RESOLVED:** pure **PowerShell 7** module/app;
+  no second-language front-end. The local web server is also PowerShell (single
+  runtime). See [ADR-0005](decisions/0005-core-runtime-powershell-7.md).
+- ✅ **Q2 — Interface.** **RESOLVED:** a **local, ephemeral, browser-based dashboard**
+  (localhost, pure-pwsh server) is the primary interface — a "configurator" that
+  pares the M365 admin consoles down to a profile/config view — with a **first-class
+  CLI** alongside. TUI/native desktop rejected as the core. This intentionally
+  overrides the research's CLI-first recommendation: ease-of-use is a core product
+  goal. See [ADR-0006](decisions/0006-interface-local-web-dashboard-and-cli.md).
+- ✅ **Q3 — Container runtime model.** **RESOLVED:** a **one-shot, ephemeral**
+  container that serves the localhost UI while running, then is discarded; runs on a
+  consultant laptop per engagement, not as a shared service. See
+  [ADR-0007](decisions/0007-container-runtime-model.md).
 
 ## Security & authentication
 
@@ -31,26 +33,28 @@ research and are worth settling early (marked ⏱️ **early**).
 
 - ✅ **Q6 — MVP surface.** **RESOLVED:** security baseline first. See
   [ADR-0003](decisions/0003-mvp-scope-security-baseline-first.md). Specific control
-  list is being defined in `docs/research/05-security-baselines.md`.
-- 🔬 **Q7 — DSC.** **DIRECTION SET:** seriously evaluate **Microsoft365DSC** as the
-  engine ([ADR-0002](decisions/0002-evaluate-microsoft365dsc-as-engine.md), status
-  *Proposed*). Confirmation depends on the research spike
-  (`docs/research/03-microsoft365dsc.md`) + a hands-on container proof, especially
-  the Linux/PowerShell-7 question and auth compatibility with Q4.
+  list defined in `docs/research/05-security-baselines.md` (~11-control v1 slice).
+- ✅ **Q7 — DSC.** **RESOLVED:** **reject Microsoft365DSC as the primary engine**;
+  build a custom Graph/EXO engine, reusing M365DSC's cross-platform export +
+  offline delta-report tooling only. Ratified without a container proof. See
+  [ADR-0002](decisions/0002-evaluate-microsoft365dsc-as-engine.md) (now *Accepted*)
+  and `docs/research/03-microsoft365dsc.md`.
 
 ## Profiles & data
 
-- **Q8 — Profile format.** JSON, YAML, or PowerShell data (`.psd1`)? Must be
-  human-readable, diff-friendly, and config-only. _To be recommended at the design
-  checkpoint (research 06)._
-- **Q9 — Profile sharing/versioning.** Are profiles committed to this repo, kept in
-  a separate repo, or purely exported files? How is a "known-good baseline"
-  versioned over time? _Design checkpoint._
+- ✅ **Q8 — Profile format.** **RESOLVED:** **YAML** to author, **JSON** as the
+  canonical (diff/interchange) form; `.psd1` is the documented minimal-deps fallback.
+  See [ADR-0008](decisions/0008-profile-format-yaml-authored-json-canonical.md).
+- ✅ **Q9 — Profile sharing/versioning.** **RESOLVED:** **Git-committed,
+  credential-free** profiles + single-file export/import; known-good baselines as
+  **git tags**; reference baseline shipped in-repo under `profiles/`. See
+  [ADR-0009](decisions/0009-profile-sharing-and-versioning.md).
 
 ## Project meta
 
-- **Q10 — License.** What license (if any)? Affects sharing/collaboration.
-  _Awaiting owner input._
+- ✅ **Q10 — License.** **RESOLVED:** **Apache-2.0**. See
+  [ADR-0010](decisions/0010-license-apache-2.md). _Follow-up:_ add `LICENSE`, update
+  README's License section.
 - ✅ **Q11 — Confluence space.** **RESOLVED:** Software Development (`SD`). See
   [ADR-0004](decisions/0004-documentation-location.md). Jira project key is **`MCA`**.
 
@@ -60,13 +64,18 @@ research and are worth settling early (marked ⏱️ **early**).
 
 | Q | Decision | Record |
 |---|----------|--------|
+| Q1 | Runtime = pure PowerShell 7 | ADR-0005 |
+| Q2 | Interface = local ephemeral web dashboard + first-class CLI | ADR-0006 |
+| Q3 | Container = one-shot, ephemeral, serves localhost UI | ADR-0007 |
 | Q4 | Auth = interactive delegated + device code, memory-only | ADR-0001 |
 | Q6 | MVP = security baseline first | ADR-0003 |
-| Q7 | Direction: evaluate Microsoft365DSC as engine (proposed) | ADR-0002 |
+| Q7 | Microsoft365DSC = reject-as-primary; custom Graph/EXO engine | ADR-0002 |
+| Q8 | Profile format = YAML authored, JSON canonical | ADR-0008 |
+| Q9 | Profiles = Git-committed + export; baselines as git tags | ADR-0009 |
+| Q10 | License = Apache-2.0 | ADR-0010 |
 | Q11 | Docs in repo `docs/` + Confluence SD | ADR-0004 |
 
-### Still open (owner input welcome any time)
+### Still open
 
-- **Q10 — License** (e.g. MIT / Apache-2.0 / proprietary).
-- **Q1/Q2/Q8/Q9** — architecture, interface, and profile-format choices, which
-  I'll bring as **recommendations at the design checkpoint** after research lands.
+- **Q5 — Certificate handling** — deferred until (and if) unattended/app-only
+  automation is needed; certs must be runtime-supplied, never persisted.
