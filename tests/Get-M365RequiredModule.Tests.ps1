@@ -30,4 +30,12 @@ Describe 'Get-M365RequiredModule' {
         $names = (Get-M365RequiredModule).Name
         ($names | Sort-Object -Unique).Count | Should -Be $names.Count
     }
+
+    It 'pins each version to a precise 3-part release (not a floating major.minor)' {
+        # A deliberate pin is e.g. 2.38.1 (Build >= 0); a floating '2.38' has
+        # Build = -1. This keeps "upgrades are deliberate" (NFR-7) honest.
+        foreach ($m in Get-M365RequiredModule) {
+            ([version] $m.Version).Build | Should -BeGreaterOrEqual 0
+        }
+    }
 }
