@@ -1,0 +1,92 @@
+# =============================================================================
+# SECURITY FIRST
+# This project handles Microsoft 365 tenant configuration. Credentials, tokens,
+# and anything tenant-identifying must NEVER be committed. When in doubt, add it.
+# =============================================================================
+
+# --- Secrets, credentials, tokens ---
+*.pem
+*.pfx
+*.p12
+*.key
+*.cer
+*.crt
+*.der
+*.pass
+*.secret
+*.secrets
+secrets/
+.secrets/
+credentials*
+*credential*
+*.credential
+.env
+.env.*
+!.env.example
+*.token
+token*
+*.tokencache
+.tokencache/
+.msal*
+.graph/
+.azure/
+*.publishsettings
+
+# --- Runtime / local-only config & profiles ---
+# Profiles under profiles/ are config-only and SHOULD be shareable. Anything
+# suffixed .local or placed under a local/ subfolder is machine-specific and
+# excluded (this is where anything sensitive or exported-with-data belongs).
+*.local
+*.local.*
+local/
+**/local/
+profiles/local/
+
+# --- Logs (verbose logging is a feature; the log FILES are not committed) ---
+logs/
+*.log
+*.log.*
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Editor / IDE ---
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Language build artifacts (app language TBD; cover the common cases) ---
+# .NET / PowerShell
+bin/
+obj/
+*.nupkg
+# Node
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+# Go
+*.exe
+*.test
+# Rust
+target/
+
+# --- Containers / tooling ---
+*.pid
+.tmp/
+tmp/
+coverage/

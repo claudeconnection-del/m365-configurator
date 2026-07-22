@@ -1,0 +1,22 @@
+# Normalize line endings so scripts behave identically on every machine.
+* text=auto eol=lf
+
+# PowerShell and shell scripts must be LF (pwsh is cross-platform; sh requires LF).
+*.ps1  text eol=lf
+*.psm1 text eol=lf
+*.psd1 text eol=lf
+*.sh   text eol=lf
+
+# Windows-only helpers, if any, stay CRLF.
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# Treat these as binary (never diff/normalize).
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.pfx  binary
+*.p12  binary
+*.cer  binary
