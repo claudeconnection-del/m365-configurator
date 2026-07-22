@@ -31,6 +31,7 @@ Describe 'Get-M365ModuleStatus' {
         $status[0].Installed        | Should -BeFalse
         $status[0].Satisfied        | Should -BeFalse
         $status[0].InstalledVersion | Should -BeNullOrEmpty
+        $status[0].State            | Should -Be 'Missing'
     }
 
     It 'reports satisfied when an installed version meets the pin exactly' {
@@ -41,6 +42,7 @@ Describe 'Get-M365ModuleStatus' {
         $status[0].Installed        | Should -BeTrue
         $status[0].Satisfied        | Should -BeTrue
         $status[0].InstalledVersion | Should -Be '1.2.3'
+        $status[0].State            | Should -Be 'Match'
     }
 
     It 'reports installed-but-not-satisfied when only an older version is present' {
@@ -51,9 +53,12 @@ Describe 'Get-M365ModuleStatus' {
         $status[0].Installed        | Should -BeTrue
         $status[0].Satisfied        | Should -BeFalse
         $status[0].InstalledVersion | Should -Be '1.0.0'
+        $status[0].State            | Should -Be 'Older'
     }
 
-    It 'uses the highest installed version when several are present' {
+    It 'surfaces a newer-than-pinned install as its own State (not silently "Match")' {
+        # NFR-7 ties correctness to the pinned cmdlet surface, so a newer install
+        # must be visible/auditable — Satisfied (skip install) but flagged 'Newer'.
         $lookup = { param($Name) @(
             [pscustomobject]@{ Name = $Name; Version = [version] '1.0.0' }
             [pscustomobject]@{ Name = $Name; Version = [version] '2.5.0' }
@@ -61,7 +66,8 @@ Describe 'Get-M365ModuleStatus' {
 
         $status = Get-M365ModuleStatus -Required $script:required -InstalledLookup $lookup
 
-        $status[0].InstalledVersion | Should -Be '2.5.0'
-        $status[0].Satisfied        | Should -BeTrue   # 2.5.0 >= pinned 1.2.3
+        $status[0].InstalledVersion | Should -Be '2.5.0'   # highest of several
+        $status[0].Satisfied        | Should -BeTrue        # 2.5.0 >= pinned 1.2.3
+        $status[0].State            | Should -Be 'Newer'
     }
 }

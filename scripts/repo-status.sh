@@ -9,7 +9,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-DEFAULT_BRANCH="claude/m365-exchange-config-app-1hko7b"
+DEFAULT_BRANCH="main"
 
 hr() { printf '%s\n' "----------------------------------------------------------------"; }
 

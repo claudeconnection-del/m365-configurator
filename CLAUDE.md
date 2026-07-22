@@ -54,7 +54,7 @@ already available). Always pass the Cloud ID above.
 
 | Branch | Role |
 | --- | --- |
-| `claude/m365-exchange-config-app-1hko7b` | **Default / main working branch.** All feature work lands here (see [CONTRIBUTING.md](CONTRIBUTING.md)). |
+| `main` | **Default / main working branch.** All feature work lands here (see [CONTRIBUTING.md](CONTRIBUTING.md)). |
 
 The Phase 1 research corpus and the resume-workflow tooling were built on
 short-lived branches (`claude/mca-sub-agent-research-p1g24u`,
@@ -80,8 +80,11 @@ refreshes this live** — treat the line above as a hint, not gospel.
 
 Security is paramount (no credentials on disk, ever; nothing phones home) ·
 minimal dependencies · containerized & portable · audit-grade logging · loud,
-fast failure · stability via pinned module versions · dry-run before apply ·
-readability for visual inspection. The testable list is
-[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md); every change is measured against
-it, and **an agent never reviews its own code** (see
+fast failure — but **self-healing** for recoverable preconditions (offer a
+consented fix, don't dead-end; [ADR-0011](docs/decisions/0011-self-healing-remediation-for-recoverable-preconditions.md)) ·
+stability via pinned module versions · dry-run before apply · readability for
+visual inspection. The **canonical summary** is in the
+[README](README.md#design-tenets); the full testable list is
+[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). Every change is measured against
+them, and **an agent never reviews its own code** (see
 [CONTRIBUTING.md](CONTRIBUTING.md)).

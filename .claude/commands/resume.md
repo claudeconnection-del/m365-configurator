@@ -12,7 +12,7 @@ Coordinates (do not ask the user for these):
 - Atlassian Cloud ID: `b738554c-85e3-4c02-8140-fef01cb5fdb9` (`chomey.atlassian.net`)
 - Jira project: `MCA` · Confluence space: `SD`
 - Key Confluence pages: `1048577` (project home), `917517` (research index)
-- Default/working branch: `claude/m365-exchange-config-app-1hko7b`
+- Default/working branch: `main`
 
 Optional focus from the user: **$ARGUMENTS** — if given, weight the report toward
 it, but still run every source check below.

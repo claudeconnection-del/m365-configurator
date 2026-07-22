@@ -35,18 +35,21 @@ A consultant/operator tool that:
 - **Logs verbosely** for audit, with easy access to those logs, and **fails loud
   and fast** with proper error handling.
 
-## Design tenets (baked in from day one)
+## Design tenets
 
-These are the non-negotiables the whole project is built around. See
-[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) for the full, testable list.
+The non-negotiables the whole project is built around — the **canonical summary**;
+other docs point here. See [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) for the
+full, testable list.
 
 1. **Security is paramount.** No credentials are ever written to disk. Nothing
    "phones home" — the app only talks to endpoints it is explicitly told to.
 2. **Minimal dependencies.** Fewer moving parts = fewer things to break or trust.
 3. **Containerized & portable.** Runs the same everywhere.
 4. **Audit-grade logging.** Verbose, structured, easily retrievable.
-5. **Loud, fast failure.** Errors surface immediately and clearly — no silent
-   partial application.
+5. **Loud, fast failure — but self-healing.** Errors surface immediately and
+   clearly — no silent partial application. For *recoverable* preconditions (e.g.
+   a missing module) the app offers a consented fix rather than a dead-end
+   ([ADR-0011](docs/decisions/0011-self-healing-remediation-for-recoverable-preconditions.md)).
 6. **Stability by construction.** As long as the underlying PowerShell module
    syntax is stable, this tool is stable. Version-pinning is a first-class concern.
 7. **Reviewable, deterministic changes.** Dry-run first; diffs and remediations
@@ -60,7 +63,6 @@ These are the non-negotiables the whole project is built around. See
 ```bash
 git clone <this-repo-url>
 cd m365-configurator
-git checkout claude/m365-exchange-config-app-1hko7b
 ```
 
 Then pick **one** of:

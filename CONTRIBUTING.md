@@ -24,7 +24,7 @@ Invoke-Pester -Path tests/
 
 ## 2. Branching
 
-- All work for this initiative lands on **`claude/m365-exchange-config-app-1hko7b`**.
+- All work for this initiative lands on **`main`** (the default branch).
 - Never push to another branch without explicit permission.
 - Keep commits small, descriptive, and scoped to one logical change.
 
@@ -48,21 +48,16 @@ checks against the design tenets below and the requirements in
 
 ## 5. Non-negotiable design tenets
 
-Every change is measured against these (full, testable list in
-[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md)):
-
-- **No credentials on disk. Ever.** No secrets in code, config, logs, or profiles.
-- **No unexpected network calls.** The app talks only to endpoints it is
-  explicitly told to. Adding an outbound call requires justification in review.
-- **Loud, fast failure.** No silent catches; no partial application without a
-  clear, logged error.
-- **Audit-grade logging.** Structured, verbose, retrievable.
-- **Minimal dependencies.** New dependencies must be justified in review.
-- **Dry-run first.** Any change-applying feature ships with a preview path.
-- **Version-pinning discipline.** Stability is tied to pinned module versions.
-- **Readability for visual inspection.** Format code, profiles, logs, and diffs so
-  a human can scan and verify them at a glance. Consistent, aligned, and scannable
-  beats clever or dense. Reviewers reject output that's hard to eyeball.
+Every change is measured against the project's design tenets. To keep a single
+source of truth, the **canonical summary lives in the
+[README](README.md#design-tenets)** and the full, testable list in
+[`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md). In brief: no credentials on disk,
+ever; no unexpected network calls; loud, fast failure — with **self-healing**
+*offers* for recoverable preconditions
+([ADR-0011](docs/decisions/0011-self-healing-remediation-for-recoverable-preconditions.md));
+audit-grade logging; minimal dependencies; dry-run before apply; pinned module
+versions; readability for visual inspection. **Reviewers reject changes that
+violate these.**
 
 ## 6. Security reporting
 

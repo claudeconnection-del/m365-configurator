@@ -45,12 +45,22 @@ function Get-M365ModuleStatus {
         # required-module list, not something detection should force.
         $satisfied = $installed -and ($installedVersion -ge $requiredVersion)
 
+        # State names the exact relationship to the pin so a newer-than-pinned
+        # install is visible/auditable (NFR-7) rather than silently "satisfied":
+        #   Missing | Older | Match | Newer
+        $state =
+            if (-not $installed)                        { 'Missing' }
+            elseif ($installedVersion -eq $requiredVersion) { 'Match' }
+            elseif ($installedVersion -gt $requiredVersion) { 'Newer' }
+            else                                        { 'Older' }
+
         [pscustomobject]@{
             Name             = $module.Name
             RequiredVersion  = $module.Version
             Installed        = $installed
             InstalledVersion = if ($installedVersion) { $installedVersion.ToString() } else { $null }
             Satisfied        = $satisfied
+            State            = $state
         }
     }
 }
