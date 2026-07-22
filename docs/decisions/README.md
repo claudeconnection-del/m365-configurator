@@ -17,4 +17,7 @@ reasoning survives and anyone picking up the work understands *why*, not just
 
 | # | Title | Status |
 |---|-------|--------|
-| — | _None recorded yet_ | — |
+| [0001](0001-authentication-interactive-and-device-code.md) | Authentication: interactive delegated + device code, memory-only | Accepted |
+| [0002](0002-evaluate-microsoft365dsc-as-engine.md) | Evaluate Microsoft365DSC as the primary configuration engine | Proposed |
+| [0003](0003-mvp-scope-security-baseline-first.md) | MVP scope: security baseline first | Accepted |
+| [0004](0004-documentation-location.md) | Documentation lives in repo `docs/` + Confluence SD | Accepted |
