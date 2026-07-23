@@ -54,8 +54,14 @@ function Invoke-M365Cleanup {
             (Join-Path $HOME '.graph')                        # legacy: ecache.bin3
             (Join-Path $HOME '.local/share/.IdentityService') # MSAL ext (Linux/macOS)
             (Join-Path $HOME '.IdentityService')              # alternate location
-            (Join-Path ([System.IO.Path]::GetTempPath()) 'tmpEXO*')  # EXO proxy modules
+            (Join-Path ([System.IO.Path]::GetTempPath()) 'tmpEXO*')  # EXO proxy modules (default temp)
         ),
+
+        # If Connect-M365ExchangeOnline redirected EXO's proxy modules/logs via
+        # -ModuleBasePath (research §6.3, e.g. /run/exo), those tmpEXO* files land
+        # OUTSIDE the default temp dir. Pass the same path here so they are purged
+        # and verified too — otherwise cleanup could report clean while they remain.
+        [string] $ExoModuleBasePath,
 
         # Removes one path (wildcards allowed). Default: real, error-tolerant delete.
         [scriptblock] $Remover = { param($Path) Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue },
@@ -76,8 +82,16 @@ function Invoke-M365Cleanup {
     Write-Verbose 'Cleanup: tearing down Exchange Online session (best-effort).'
     try { & $ExoDisconnector } catch { Write-Verbose "  Exchange Online disconnect reported: $($_.Exception.Message)" }
 
+    # Effective purge/verify set = the known cache paths plus, when EXO's temp was
+    # redirected at connect time, that location's proxy modules (research §6.3).
+    $targets = [System.Collections.Generic.List[string]]::new()
+    $targets.AddRange([string[]] $CachePath)
+    if ($ExoModuleBasePath) {
+        $targets.Add((Join-Path $ExoModuleBasePath 'tmpEXO*'))
+    }
+
     # 2) Purge known on-disk cache/temp locations.
-    foreach ($path in $CachePath) {
+    foreach ($path in $targets) {
         Write-Verbose "Cleanup: purging cache path '$path'."
         try { & $Remover $path } catch { Write-Verbose "  Remove reported: $($_.Exception.Message)" }
     }
@@ -96,7 +110,7 @@ function Invoke-M365Cleanup {
     $residue = [System.Collections.Generic.List[string]]::new()
     if ($graphContext)       { $residue.Add('Microsoft Graph auth context still present') }
     if ($exoConns.Count -gt 0) { $residue.Add("Exchange Online connection(s) still present ($($exoConns.Count))") }
-    foreach ($path in $CachePath) {
+    foreach ($path in $targets) {
         if (& $ResidueTest $path) { $residue.Add("on-disk residue at '$path'") }
     }
 
@@ -109,7 +123,7 @@ function Invoke-M365Cleanup {
         Service      = 'M365'
         GraphCleared = -not $graphContext
         ExoCleared   = ($exoConns.Count -eq 0)
-        PathsPurged  = @($CachePath)
+        PathsPurged  = @($targets)
         Clean        = $true
     }
 }

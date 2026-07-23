@@ -124,6 +124,26 @@ Describe 'Invoke-M365Cleanup' {
         Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
     }
 
+    It 'purges tmpEXO* residue under a redirected EXO module base path (research 04 §6.3)' {
+        # When Connect-M365ExchangeOnline used -ModuleBasePath, proxy modules land
+        # outside the default temp dir; cleanup must still reach them via
+        # -ExoModuleBasePath. Uses the real remover/residue-test seams.
+        $base = Join-Path ([System.IO.Path]::GetTempPath()) ("m365exo-" + [guid]::NewGuid())
+        New-Item -ItemType Directory -Path $base | Out-Null
+        $f = Join-Path $base 'tmpEXO_abc123.psm1'; Set-Content -Path $f -Value 'proxy-module-code'
+
+        $result = Invoke-M365Cleanup `
+            -GraphDisconnector { } -ExoDisconnector { } `
+            -GraphContextReader { $null } -ExoConnectionReader { @() } `
+            -CachePath @() -ExoModuleBasePath $base
+
+        Test-Path $f  | Should -BeFalse          # redirected residue purged
+        $result.Clean | Should -BeTrue
+        $result.PathsPurged | Should -Contain (Join-Path $base 'tmpEXO*')
+
+        Remove-Item $base -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     It 'reports without leaking secrets and names the paths it purged' {
         $result = Invoke-M365Cleanup `
             -GraphDisconnector  { } -ExoDisconnector { } `
