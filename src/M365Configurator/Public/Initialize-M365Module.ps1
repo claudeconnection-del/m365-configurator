@@ -61,8 +61,10 @@ function Initialize-M365Module {
         [scriptblock] $Installer = {
             param($Offer)
             # CurrentUser only, pinned to the exact version — never elevates.
+            # -Force keeps it non-interactive; -AllowClobber is deliberately omitted
+            # (the small pinned required set needs no command shadowing).
             Install-Module -Name $Offer.Name -RequiredVersion $Offer.RequiredVersion `
-                -Scope CurrentUser -Repository PSGallery -AllowClobber -Force
+                -Scope CurrentUser -Repository PSGallery -Force
         },
 
         [scriptblock] $Importer = {
@@ -99,6 +101,12 @@ function Initialize-M365Module {
         else {
             # Step 3 — put the self-healing offer to the caller.
             $offer = $offers[$item.Name]
+            if ($null -eq $offer) {
+                # Invariant: every unsatisfied module has a remediation offer (they
+                # derive from the same status). A miss is an internal fault, not
+                # something to paper over — fail loud and fast (NFR-6).
+                throw "Internal error: no remediation offer produced for unsatisfied module '$($item.Name)'."
+            }
             Write-Verbose "  $($item.Name) is unsatisfied ($($offer.Action)); presenting remediation offer."
 
             if (& $Consent $offer) {
@@ -129,7 +137,10 @@ function Initialize-M365Module {
         if ($shouldImport) {
             try {
                 $loaded = & $Importer $item.Name ([version] $item.RequiredVersion)
-                if ($loaded -and $loaded.Version) {
+                # Strict-mode-safe: check the property exists before reading it, so a
+                # seam returning a Version-less object yields the clean "no module"
+                # message below rather than a confusing property-not-found error.
+                if ($loaded -and $loaded.PSObject.Properties['Version'] -and $loaded.Version) {
                     $imported        = $true
                     $resolvedVersion = ([version] $loaded.Version).ToString()
                     Write-Verbose "  $($item.Name) imported; resolved version v$resolvedVersion."

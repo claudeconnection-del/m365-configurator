@@ -142,6 +142,60 @@ Describe 'Initialize-M365Module' {
         }
     }
 
+    Context 'when the install succeeds but the import fails' {
+
+        It 'reports Failed when the importer returns no module' {
+            $lookup      = { param($Name) @() }
+            $nilImporter = { param($Name, $MinimumVersion) $null }
+
+            $report = Initialize-M365Module -Required $script:required `
+                -InstalledLookup $lookup -Consent $script:grantAll `
+                -Installer { param($Offer) $script:installed += $Offer } -Importer $nilImporter
+
+            $script:installed | Should -HaveCount 1        # install happened
+            $report[0].Action    | Should -Be 'Failed'
+            $report[0].Imported  | Should -BeFalse
+            $report[0].Satisfied | Should -BeFalse
+            $report[0].Detail    | Should -Match 'no module'
+        }
+
+        It 'reports Failed with the error when the importer throws' {
+            $lookup        = { param($Name) @() }
+            $throwImporter = { param($Name, $MinimumVersion) throw 'assembly load conflict' }
+
+            $report = Initialize-M365Module -Required $script:required `
+                -InstalledLookup $lookup -Consent $script:grantAll `
+                -Installer { param($Offer) $script:installed += $Offer } -Importer $throwImporter
+
+            $report[0].Action    | Should -Be 'Failed'
+            $report[0].Imported  | Should -BeFalse
+            $report[0].Satisfied | Should -BeFalse
+            $report[0].Detail    | Should -Match 'assembly load conflict'
+        }
+    }
+
+    Context 'the real default installer (security tenets on the actual install path)' {
+
+        It 'invokes Install-Module at CurrentUser scope pinned to the required version, never AllUsers' {
+            # Exercise the built-in -Installer default (not a fake) to prove the real
+            # install command never elevates and pins exactly. Install-Module is
+            # mocked inside the module scope so nothing reaches the Gallery.
+            $lookup   = { param($Name) @() }                       # missing -> triggers install
+            $importer = & $script:makeImporter ([version] '1.2.3') # keep import off the machine
+
+            Mock -ModuleName M365Configurator Install-Module { }
+
+            $null = Initialize-M365Module -Required $script:required `
+                -InstalledLookup $lookup -Consent $script:grantAll -Importer $importer
+
+            Should -Invoke -ModuleName M365Configurator Install-Module -Times 1 -Exactly -ParameterFilter {
+                $Name -eq 'Foo.Bar' -and
+                $RequiredVersion -eq '1.2.3' -and
+                $Scope -eq 'CurrentUser'
+            }
+        }
+    }
+
     Context 'audit logging (NFR-6 loud, NFR-7 pins surfaced)' {
 
         It 'announces each pinned module and its required version on the verbose stream' {
