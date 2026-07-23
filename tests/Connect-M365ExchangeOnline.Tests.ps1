@@ -21,15 +21,19 @@ BeforeAll {
     $manifest = Join-Path $PSScriptRoot '..' 'src' 'M365Configurator' 'M365Configurator.psd1'
     Import-Module $manifest -Force
 
-    # A stand-in for Get-ConnectionInformation output, plus a decoy 'Token' field
-    # that must NEVER surface in the reported state.
+    # A stand-in shaped like the real Get-ConnectionInformation output
+    # (Microsoft.Exchange.Management.ExoPowershellSnapin.ConnectionInformation).
+    # AppId / TenantID / ConnectionUri are genuine fields on that object that we
+    # deliberately DON'T surface — they must not leak into the reported state.
     $script:fakeConn = [pscustomobject]@{
         ConnectionId      = 'abc-123'
         State             = 'Connected'
         UserPrincipalName = 'admin@contoso.onmicrosoft.com'
         Organization      = 'contoso.onmicrosoft.com'
         ConnectionUri     = 'https://outlook.office365.com'
-        Token             = 'SECRET-DO-NOT-LEAK'
+        AppId             = 'app-id-DO-NOT-LEAK'
+        TenantID          = 'tenant-id-DO-NOT-LEAK'
+        TokenStatus       = 'Active-DO-NOT-LEAK'
     }
 }
 
@@ -81,7 +85,7 @@ Describe 'Connect-M365ExchangeOnline' {
         $script:captured.EXOModuleBasePath | Should -Be '/run/exo'
     }
 
-    It 'reports connection state without exposing any token/secret (NFR-1)' {
+    It 'reports connection state as exactly a secret-free allowlist (NFR-1)' {
         $connector = { param($ConnectParams) }
         $reader    = { $script:fakeConn }
 
@@ -90,8 +94,16 @@ Describe 'Connect-M365ExchangeOnline' {
         $state.Connected         | Should -BeTrue
         $state.UserPrincipalName | Should -Be 'admin@contoso.onmicrosoft.com'
         $state.Organization      | Should -Be 'contoso.onmicrosoft.com'
-        $state.PSObject.Properties.Name | Should -Not -Contain 'Token'
-        ($state | Out-String)           | Should -Not -Match 'SECRET-DO-NOT-LEAK'
+
+        # Positive allowlist: the reported object carries exactly these fields, so
+        # the connection object's other fields (AppId/TenantID/ConnectionUri/…)
+        # are structurally excluded and no marker value survives.
+        $expected = @('Service', 'Connected', 'UserPrincipalName', 'Organization', 'State', 'ConnectionId', 'Method')
+        $state.PSObject.Properties.Name | Should -Be $expected
+        foreach ($field in 'AppId', 'TenantID', 'ConnectionUri', 'TokenStatus') {
+            $state.PSObject.Properties.Name | Should -Not -Contain $field
+        }
+        ($state | Out-String) | Should -Not -Match 'DO-NOT-LEAK'
     }
 
     It 'fails loud when the connection is not established (NFR-6)' {

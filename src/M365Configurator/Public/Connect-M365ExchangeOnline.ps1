@@ -73,7 +73,9 @@ function Connect-M365ExchangeOnline {
     $orgText = if ($Organization) { $Organization } else { '(default)' }
     Write-Verbose "Connecting to Exchange Online — method: $Method; tokens in-memory; organization: $orgText."
 
-    & $Connector $connectParams
+    # Out-Null for the same defense-in-depth reason as the Graph wrapper: keep any
+    # object a seam/SDK might return off our pipeline so only $state is emitted.
+    & $Connector $connectParams | Out-Null
 
     # A successful sign-in must yield an active REST connection; its absence is a
     # real failure, not a "connected" result (loud/fast — NFR-6).

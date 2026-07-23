@@ -19,16 +19,20 @@ BeforeAll {
     $manifest = Join-Path $PSScriptRoot '..' 'src' 'M365Configurator' 'M365Configurator.psd1'
     Import-Module $manifest -Force
 
-    # A stand-in Graph auth context shaped like Get-MgContext's output — plus a
-    # decoy 'AccessToken' property that must NEVER surface in the reported state.
+    # A stand-in Graph auth context shaped like the real Get-MgContext output
+    # (Microsoft.Graph.PowerShell.Authentication.AuthContext). The last three are
+    # the genuine secret-bearing fields that object carries — they must NEVER
+    # surface in the reported state.
     $script:fakeContext = [pscustomobject]@{
-        Account      = 'admin@contoso.onmicrosoft.com'
-        TenantId     = '11111111-2222-3333-4444-555555555555'
-        Scopes       = @('Policy.Read.All', 'Directory.Read.All')
-        AuthType     = 'Delegated'
-        ContextScope = 'Process'
-        Environment  = 'Global'
-        AccessToken  = 'SECRET-DO-NOT-LEAK'
+        Account               = 'admin@contoso.onmicrosoft.com'
+        TenantId              = '11111111-2222-3333-4444-555555555555'
+        Scopes                = @('Policy.Read.All', 'Directory.Read.All')
+        AuthType              = 'Delegated'
+        ContextScope          = 'Process'
+        Environment           = 'Global'
+        ClientSecret          = 'SECRET-CLIENT-DO-NOT-LEAK'
+        Certificate           = 'CERT-OBJECT-DO-NOT-LEAK'
+        CertificateThumbprint = 'AABBCCDD-DO-NOT-LEAK'
     }
 }
 
@@ -76,7 +80,7 @@ Describe 'Connect-M365Graph' {
         $script:captured.TenantId | Should -Be 'contoso'
     }
 
-    It 'reports connection state without exposing any token/secret (NFR-1)' {
+    It 'reports connection state as exactly a secret-free allowlist (NFR-1)' {
         $connector = { param($ConnectParams) }
         $reader    = { $script:fakeContext }
 
@@ -86,9 +90,17 @@ Describe 'Connect-M365Graph' {
         $state.Account   | Should -Be 'admin@contoso.onmicrosoft.com'
         $state.TenantId  | Should -Be '11111111-2222-3333-4444-555555555555'
         $state.Scopes    | Should -Contain 'Policy.Read.All'
-        # The decoy secret on the context must not appear anywhere in the report.
-        $state.PSObject.Properties.Name | Should -Not -Contain 'AccessToken'
-        ($state | Out-String)           | Should -Not -Match 'SECRET-DO-NOT-LEAK'
+
+        # The projection is a positive allowlist: the reported object carries
+        # exactly these fields and nothing else — so the real secret-bearing
+        # context fields (ClientSecret/Certificate/CertificateThumbprint) are
+        # structurally excluded, and no plaintext secret marker survives.
+        $expected = @('Service', 'Connected', 'Account', 'TenantId', 'Scopes', 'AuthType', 'ContextScope', 'Method', 'Environment')
+        $state.PSObject.Properties.Name | Should -Be $expected
+        foreach ($secret in 'ClientSecret', 'Certificate', 'CertificateThumbprint') {
+            $state.PSObject.Properties.Name | Should -Not -Contain $secret
+        }
+        ($state | Out-String) | Should -Not -Match 'DO-NOT-LEAK'
     }
 
     It 'fails loud when sign-in yields no context (NFR-6)' {

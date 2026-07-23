@@ -73,7 +73,10 @@ function Connect-M365Graph {
     Write-Verbose "Connecting to Microsoft Graph — method: $Method; token scope: Process (memory-only); tenant: $tenantText."
     Write-Verbose "  Requested delegated scopes: $scopeText."
 
-    & $Connector $connectParams
+    # Out-Null: the default Connect-MgGraph -NoWelcome emits nothing, but a future
+    # SDK or an alternate seam could return a context object — discard it so only
+    # our secret-free $state ever reaches the pipeline (defense-in-depth, NFR-1).
+    & $Connector $connectParams | Out-Null
 
     # A successful sign-in must leave an auth context; its absence is a real
     # failure, not something to report as "connected" (loud/fast — NFR-6).

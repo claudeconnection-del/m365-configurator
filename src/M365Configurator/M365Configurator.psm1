@@ -34,7 +34,8 @@ $public = @(Get-ChildItem -LiteralPath $publicDir -Filter '*.ps1')
 
 # Wrap each operand in @() at the point of addition: a single-file Get-ChildItem
 # result assigned out of an if-expression unwraps to a scalar, and scalar + array
-# throws. @($private) + @($public) is array-safe for 0, 1, or many files.
+# throws. @($private) + @($public) is array-safe for 0, 1, or many files. (Order
+# is immaterial — every file only defines functions, nothing runs at dot-source.)
 foreach ($file in (@($private) + @($public))) {
     . $file.FullName
 }
