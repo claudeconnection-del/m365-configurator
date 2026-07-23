@@ -68,6 +68,15 @@ function Test-M365Profile {
             foreach ($field in 'id', 'framework', 'frameworkVersion', 'provider', 'settings') {
                 if (-not (Test-M365MapHasKey $control $field)) {
                     $errors.Add("control[$index] missing required field '$field'")
+                    continue
+                }
+                # The string-valued fields must also be non-empty; a present-but-
+                # null/empty id or provider is as invalid as an absent one.
+                if ($field -ne 'settings') {
+                    $value = Get-M365MapValue $control $field
+                    if ($null -eq $value -or ('' -eq [string] $value)) {
+                        $errors.Add("control[$index] required field '$field' is empty")
+                    }
                 }
             }
             $provider = Get-M365MapValue $control 'provider'

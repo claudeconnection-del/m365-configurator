@@ -57,6 +57,18 @@ Describe 'Test-M365Profile' {
         ($result.Errors -join '; ') | Should -Match 'id'
     }
 
+    It 'rejects a control whose required field is present but empty/null' {
+        $bad = [ordered]@{
+            schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
+            controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = $null; settings = [ordered]@{ a = 1 } } )
+        }
+
+        $result = Test-M365Profile -Profile $bad
+
+        $result.Valid | Should -BeFalse
+        ($result.Errors -join '; ') | Should -Match 'provider'
+    }
+
     It 'rejects an unknown provider on a control' {
         $bad = [ordered]@{
             schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
