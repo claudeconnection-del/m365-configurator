@@ -8,7 +8,7 @@
 
     # Exported functions are declared explicitly per public file; the root module
     # also calls Export-ModuleMember. Keep this list in sync as public functions land.
-    FunctionsToExport = @('Get-M365RequiredModule', 'Get-M365ModuleStatus', 'Get-M365ModuleRemediation', 'Initialize-M365Module')
+    FunctionsToExport = @('Get-M365RequiredModule', 'Get-M365ModuleStatus', 'Get-M365ModuleRemediation', 'Initialize-M365Module', 'Connect-M365Graph', 'Disconnect-M365Graph')
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()

@@ -32,7 +32,10 @@ $private = if (Test-Path -LiteralPath $privateDir) {
 }
 $public = @(Get-ChildItem -LiteralPath $publicDir -Filter '*.ps1')
 
-foreach ($file in @($private + $public)) {
+# Wrap each operand in @() at the point of addition: a single-file Get-ChildItem
+# result assigned out of an if-expression unwraps to a scalar, and scalar + array
+# throws. @($private) + @($public) is array-safe for 0, 1, or many files.
+foreach ($file in (@($private) + @($public))) {
     . $file.FullName
 }
 
