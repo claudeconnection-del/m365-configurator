@@ -29,40 +29,43 @@ function Test-M365Profile {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
+        # -Profile alias kept for readability at call sites; the variable is named
+        # $InputObject to avoid shadowing the automatic $PROFILE variable.
         [Parameter(Mandatory, Position = 0)]
+        [Alias('Profile')]
         [AllowNull()]
-        $Profile
+        $InputObject
     )
 
     $errors = [System.Collections.Generic.List[string]]::new()
 
-    if ($null -eq $Profile) {
+    if ($null -eq $InputObject) {
         return [pscustomobject]@{ Valid = $false; Errors = @('profile is null') }
     }
 
     # --- top-level required fields -------------------------------------------
     foreach ($field in 'schemaVersion', 'name', 'framework', 'frameworkVersion', 'controls') {
-        if (-not (Test-M365MapHasKey $Profile $field)) {
+        if (-not (Test-M365MapHasKey $InputObject $field)) {
             $errors.Add("missing required field '$field'")
             continue
         }
         # string fields must be non-empty; 'controls' may be an (empty) array.
         if ($field -ne 'controls') {
-            $value = Get-M365MapValue $Profile $field
+            $value = Get-M365MapValue $InputObject $field
             if ($null -eq $value -or ('' -eq [string] $value)) {
                 $errors.Add("required field '$field' is empty")
             }
         }
     }
 
-    $schemaVersion = Get-M365MapValue $Profile 'schemaVersion'
+    $schemaVersion = Get-M365MapValue $InputObject 'schemaVersion'
     if ($schemaVersion -and [string] $schemaVersion -ne '1.0') {
         $errors.Add("unsupported schemaVersion '$schemaVersion' (expected '1.0')")
     }
 
     # --- controls -------------------------------------------------------------
-    $controls = Get-M365MapValue $Profile 'controls'
-    if ($controls -and (Test-M365MapHasKey $Profile 'controls')) {
+    $controls = Get-M365MapValue $InputObject 'controls'
+    if ($controls -and (Test-M365MapHasKey $InputObject 'controls')) {
         $index = 0
         foreach ($control in @($controls)) {
             foreach ($field in 'id', 'framework', 'frameworkVersion', 'provider', 'settings') {
@@ -88,7 +91,7 @@ function Test-M365Profile {
     }
 
     # --- config-only: no credential-shaped fields anywhere (NFR-1) -----------
-    foreach ($hit in @(Find-M365SecretKey -InputObject $Profile)) {
+    foreach ($hit in @(Find-M365SecretKey -InputObject $InputObject)) {
         $errors.Add("credential-shaped field not allowed (profiles are config-only): '$hit'")
     }
 

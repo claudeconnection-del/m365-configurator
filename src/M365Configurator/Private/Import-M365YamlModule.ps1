@@ -20,8 +20,17 @@ function Import-M365YamlModule {
 
     if (Get-Command -Name 'ConvertFrom-Yaml' -ErrorAction SilentlyContinue) { return }
 
+    # Load the pinned version specifically, so that if several are installed we
+    # bind to the declared pin (single source of truth) rather than the highest.
+    $pin = (Get-M365RequiredModule | Where-Object { $_.Name -eq 'powershell-yaml' } | Select-Object -First 1).Version
+
     try {
-        Import-Module -Name 'powershell-yaml' -ErrorAction Stop
+        if ($pin) {
+            Import-Module -Name 'powershell-yaml' -RequiredVersion $pin -ErrorAction Stop
+        }
+        else {
+            Import-Module -Name 'powershell-yaml' -ErrorAction Stop
+        }
     }
     catch {
         throw "The 'powershell-yaml' module is required for profile YAML but could not be loaded. Run the module bootstrap (Initialize-M365Module) first. Underlying error: $($_.Exception.Message)"

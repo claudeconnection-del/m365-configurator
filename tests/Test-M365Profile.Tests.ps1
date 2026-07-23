@@ -105,6 +105,35 @@ Describe 'Test-M365Profile' {
         }
     }
 
+    It 'catches credential head-noun keys that are not simple compounds (no false negatives)' {
+        foreach ($key in 'passphrase', 'apiToken', 'authToken', 'sasToken', 'privateKey', 'accessKey', 'connectionString') {
+            $leaky = [ordered]@{
+                schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
+                controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = 'graph'; settings = [ordered]@{ $key = 'v' } } )
+            }
+            (Test-M365Profile -Profile $leaky).Valid | Should -BeFalse -Because "$key names credential material"
+        }
+    }
+
+    It 'allows legitimate policy settings that merely mention a credential word (no false positives)' {
+        # Real SCuBA/AAD token-lifetime + policy settings — value is not a secret.
+        foreach ($key in 'accessTokenLifetime', 'refreshTokenLifetime', 'idTokenLifetime', 'requireSecretRotation', 'apiKeyEnforced', 'connectionStringRequired') {
+            $ok = [ordered]@{
+                schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
+                controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = 'graph'; settings = [ordered]@{ $key = 'PT1H' } } )
+            }
+            (Test-M365Profile -Profile $ok).Valid | Should -BeTrue -Because "$key is a policy setting, not a credential"
+        }
+    }
+
+    It 'accepts a profile with a single control (array of one)' {
+        $one = [ordered]@{
+            schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
+            controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = 'graph'; settings = [ordered]@{ state = 'enabled' } } )
+        }
+        (Test-M365Profile -Profile $one).Valid | Should -BeTrue
+    }
+
     It 'does not mutate the profile it validates' {
         $before = ConvertTo-M365CanonicalJson $script:validProfile
         $null   = Test-M365Profile -Profile $script:validProfile

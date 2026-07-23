@@ -55,6 +55,33 @@ Describe 'ConvertTo-M365CanonicalJson' {
         $first | Should -Be $second
     }
 
+    It 'keeps a single-element array as a JSON array (no scalar collapse)' {
+        $one = [ordered]@{ controls = @([ordered]@{ id = 'A' }) }
+        $json = ConvertTo-M365CanonicalJson $one
+        ($json -replace '\s', '') | Should -Match '"controls":\['
+    }
+
+    It 'keeps an empty array as [] (not null)' {
+        $empty = [ordered]@{ controls = @() }
+        $json = ConvertTo-M365CanonicalJson $empty
+        ($json -replace '\s', '') | Should -Match '"controls":\[\]'
+    }
+
+    It 'preserves non-string scalars (int, bool, null) through canonicalization' {
+        $obj = [ordered]@{ count = 3; enabled = $true; note = $null }
+        $json = ConvertTo-M365CanonicalJson $obj
+        $json | Should -Match '"count":\s*3'
+        $json | Should -Match '"enabled":\s*true'
+        $json | Should -Match '"note":\s*null'
+    }
+
+    It 'does not flatten nested arrays or drop null elements' {
+        $obj = [ordered]@{ items = @( @(1, 2), @(3) ) }
+        $json = ConvertTo-M365CanonicalJson $obj
+        # Two inner arrays remain two arrays (nested), not merged into one.
+        ([regex]::Matches($json, '\[')).Count | Should -BeGreaterOrEqual 3
+    }
+
     It 'treats a nested control array of objects deterministically by content' {
         $reordered = [ordered]@{
             schemaVersion    = '1.0'
