@@ -30,7 +30,7 @@ function Disconnect-M365ExchangeOnline {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [scriptblock] $Disconnector = { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue },
+        [scriptblock] $Disconnector = { Disconnect-ExchangeOnline -Confirm:$false -ErrorAction SilentlyContinue | Out-Null },
 
         [scriptblock] $ConnectionReader = { Get-ConnectionInformation }
     )

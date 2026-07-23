@@ -78,7 +78,9 @@ function Connect-M365ExchangeOnline {
     & $Connector $connectParams | Out-Null
 
     # A successful sign-in must yield an active REST connection; its absence is a
-    # real failure, not a "connected" result (loud/fast — NFR-6).
+    # real failure, not a "connected" result (loud/fast — NFR-6). EXO permits
+    # several simultaneous connections; the one we just established is the most
+    # recent, so -Last 1 reports it (Get-ConnectionInformation appends in order).
     $connection = @(& $ConnectionReader) | Select-Object -Last 1
     if (-not $connection) {
         throw 'Exchange Online connection failed: no active Exchange Online connection was established.'

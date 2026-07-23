@@ -114,7 +114,7 @@ Describe 'Connect-M365ExchangeOnline' {
             Should -Throw -ExpectedMessage '*no active Exchange Online connection*'
     }
 
-    It 'drives the REAL default connector with -Device and -ShowBanner:$false, never -UseRPSSession' {
+    It 'drives the REAL default connector with -Device and -ShowBanner:$false, never a plaintext credential' {
         Mock -ModuleName M365Configurator Connect-ExchangeOnline { }
 
         $null = Connect-M365ExchangeOnline -Organization 'contoso.onmicrosoft.com' `
@@ -123,9 +123,23 @@ Describe 'Connect-M365ExchangeOnline' {
         Should -Invoke -ModuleName M365Configurator Connect-ExchangeOnline -Times 1 -Exactly -ParameterFilter {
             $Device -eq $true -and $ShowBanner -eq $false
         }
+        # The real NFR-1 hazards that STILL exist in EXO V3 are the plaintext-on-
+        # Linux credential paths (-UseRPSSession was removed in the V3 line, so a
+        # filter on it would be a tautology). Prove neither is ever passed.
         Should -Invoke -ModuleName M365Configurator Connect-ExchangeOnline -Times 0 -Exactly -ParameterFilter {
-            $UseRPSSession -eq $true
+            $null -ne $Credential -or $InlineCredential -eq $true
         }
+    }
+
+    It 'reports the most-recent connection when several are active (multi-connection)' {
+        $conns = @(
+            [pscustomobject]@{ ConnectionId = 'old'; State = 'Connected'; UserPrincipalName = 'first@contoso'; Organization = 'contoso.onmicrosoft.com' }
+            [pscustomobject]@{ ConnectionId = 'new'; State = 'Connected'; UserPrincipalName = 'admin@contoso'; Organization = 'contoso.onmicrosoft.com' }
+        )
+        $state = Connect-M365ExchangeOnline -Connector { param($p) } -ConnectionReader { $conns }
+
+        $state.ConnectionId      | Should -Be 'new'
+        $state.UserPrincipalName | Should -Be 'admin@contoso'
     }
 }
 
@@ -165,5 +179,26 @@ Describe 'Disconnect-M365ExchangeOnline' {
 
         { Disconnect-M365ExchangeOnline -Disconnector $disconnector -ConnectionReader $reader } |
             Should -Throw -ExpectedMessage '*still present*'
+    }
+
+    It 'tears down all connections when several are active (multi-connection)' {
+        $script:calls = 0
+        $reader = {
+            $script:calls++
+            if ($script:calls -eq 1) {
+                @(
+                    [pscustomobject]@{ ConnectionId = 'a' }
+                    [pscustomobject]@{ ConnectionId = 'b' }
+                )
+            } else { @() }
+        }
+        $script:disconnected = $false
+        $disconnector = { $script:disconnected = $true }
+
+        $result = Disconnect-M365ExchangeOnline -Disconnector $disconnector -ConnectionReader $reader
+
+        $script:disconnected | Should -BeTrue
+        $result.WasConnected | Should -BeTrue
+        $result.Connected    | Should -BeFalse
     }
 }
