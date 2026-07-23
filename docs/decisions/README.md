@@ -22,9 +22,10 @@ reasoning survives and anyone picking up the work understands *why*, not just
 | [0003](0003-mvp-scope-security-baseline-first.md) | MVP scope: security baseline first | Accepted |
 | [0004](0004-documentation-location.md) | Documentation lives in repo `docs/` + Confluence SD | Accepted |
 | [0005](0005-core-runtime-powershell-7.md) | Core runtime: pure PowerShell 7 | Accepted |
-| [0006](0006-interface-local-web-dashboard-and-cli.md) | Interface: local ephemeral web dashboard + first-class CLI | Accepted |
+| [0006](0006-interface-local-web-dashboard-and-cli.md) | Interface: local ephemeral web dashboard + first-class CLI | Accepted — amended by 0012 |
 | [0007](0007-container-runtime-model.md) | Container runtime model: one-shot, ephemeral, serves the local UI | Accepted |
 | [0008](0008-profile-format-yaml-authored-json-canonical.md) | Profile format: YAML authored, JSON canonical | Accepted |
 | [0009](0009-profile-sharing-and-versioning.md) | Profile sharing & versioning: Git-committed, export, tagged baselines | Accepted |
 | [0010](0010-license-apache-2.md) | License: Apache-2.0 | Accepted |
 | [0011](0011-self-healing-remediation-for-recoverable-preconditions.md) | Self-healing: offer remediation for recoverable preconditions | Accepted |
+| [0012](0012-cli-first-interface-gui-deferred.md) | CLI-first interface; GUI deferred until proven in the CLI | Accepted (amends 0006) |

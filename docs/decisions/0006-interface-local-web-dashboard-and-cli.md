@@ -1,6 +1,6 @@
 # 0006. Interface: local ephemeral web dashboard, with a first-class CLI
 
-- **Status:** Accepted
+- **Status:** Accepted — **amended by [ADR-0012](0012-cli-first-interface-gui-deferred.md) (2026-07-23):** the CLI is now the primary interface for v1 and the web dashboard is **deferred** until the functional surface is proven in the CLI. The dashboard requirements below are retained as the spec for that future work; they do **not** apply to v1.
 - **Date:** 2026-07-22
 - **Deciders:** Project owner + team
 - **Requirements:** FR-4, FR-8, FR-12, NFR-1, NFR-2, NFR-3, NFR-9
