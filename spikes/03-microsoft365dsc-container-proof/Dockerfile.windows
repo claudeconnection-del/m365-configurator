@@ -1,0 +1,30 @@
+# Microsoft365DSC container proof — Windows image (the ADR-0002 "fallback" host).
+#
+# Purpose: measure the Windows-only path the research identifies — the compile →
+# MOF → LCM apply loop, MOF credential exposure, and image cost (R2/R5/R6/R8 in
+# docs/research/03-microsoft365dsc.md).
+#
+# REQUIRES A WINDOWS CONTAINER HOST. This will NOT build or run on a Linux Docker
+# engine. On Windows with containers enabled:
+#   docker build -f Dockerfile.windows --build-arg M365DSC_VERSION=1.26.0 -t m365dsc-proof:win .
+#   docker run --rm -v ${PWD}\results:C:\proof-results m365dsc-proof:win
+#
+# Base: Windows Server Core ships Windows PowerShell 5.1, where the DSC 1.1 LCM
+# (Start-DscConfiguration, the 15-min consistency check) exists. Pin the tag to the
+# host's compatible Windows build. servercore is multi-GB — that size is the point
+# of R8, and the reason this path costs us NFR-4 portability.
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
+
+ARG M365DSC_VERSION=latest
+
+WORKDIR C:\\proof
+COPY probes/ ./probes/
+
+# Install under Windows PowerShell 5.1 (Microsoft365DSC's documented install path),
+# AllUsers scope. Same resilient install script as the Linux image.
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File probes\\Install-M365Dsc.ps1 -Version "${M365DSC_VERSION}" -Scope AllUsers
+
+# The probes' shared helpers use pwsh-7 syntax in places; run them with whichever
+# PowerShell is available. Windows PowerShell 5.1 covers the Windows-specific
+# checks (LCM, MOF). If pwsh 7 is added to the image, prefer it.
+ENTRYPOINT ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "probes\\Invoke-WindowsProbes.ps1"]

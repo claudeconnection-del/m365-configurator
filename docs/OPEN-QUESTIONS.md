@@ -34,9 +34,13 @@ research and are worth settling early (marked ⏱️ **early**).
   list is being defined in `docs/research/05-security-baselines.md`.
 - 🔬 **Q7 — DSC.** **DIRECTION SET:** seriously evaluate **Microsoft365DSC** as the
   engine ([ADR-0002](decisions/0002-evaluate-microsoft365dsc-as-engine.md), status
-  *Proposed*). Confirmation depends on the research spike
-  (`docs/research/03-microsoft365dsc.md`) + a hands-on container proof, especially
-  the Linux/PowerShell-7 question and auth compatibility with Q4.
+  *Proposed*). The research spike (`docs/research/03-microsoft365dsc.md`) is
+  **complete** and recommends **reject-as-primary** (LCM is Windows-only; no
+  device-code/interactive apply; MOF stores credentials). Per owner decision, a
+  **hands-on container proof** runs before ratifying: the harness lives at
+  [`spikes/03-microsoft365dsc-container-proof/`](../spikes/03-microsoft365dsc-container-proof/)
+  and answers the doc's R1–R9 (Linux/pwsh-7 viability, auth compatibility with Q4,
+  MOF/credential exposure, footprint). ADR-0002 is ratified once its results land.
 
 ## Profiles & data
 

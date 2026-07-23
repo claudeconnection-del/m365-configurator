@@ -1,0 +1,30 @@
+# Microsoft365DSC container proof — Linux + PowerShell 7 image.
+#
+# Purpose: empirically test whether Microsoft365DSC installs, imports, and (with
+# operator-supplied auth) exports on our TARGET runtime — Linux + pwsh 7 — per the
+# R1/R2/R3/R4/R7 probes in docs/research/03-microsoft365dsc.md. This is a throwaway
+# investigation image, NOT the shipping tool.
+#
+# Build (pin the exact release you are validating — see R9):
+#   docker build -f Dockerfile.linux --build-arg M365DSC_VERSION=1.26.0 -t m365dsc-proof:linux .
+# Run (writes results to ./results on the host; no tenant contacted by default):
+#   docker run --rm -v "$(pwd)/results:/proof-results" m365dsc-proof:linux
+#
+# Official PowerShell image; pinned to the 7.4 LTS line to match the dev container.
+FROM mcr.microsoft.com/powershell:7.4-debian-bookworm
+
+# The Microsoft365DSC version under test. Default 'latest' installs whatever the
+# gallery currently serves and the probes RECORD the resolved version (R9). For a
+# reproducible proof, pass an exact version via --build-arg.
+ARG M365DSC_VERSION=latest
+
+WORKDIR /proof
+COPY probes/ ./probes/
+
+# Install at build time so R1/R3/R4 can be measured. The install script is
+# resilient (never throws): if install/import fails on Linux — the outcome
+# issue #3144 predicts — the image still builds and the R1 probe records it.
+RUN pwsh -NoProfile -File probes/Install-M365Dsc.ps1 -Version "${M365DSC_VERSION}" -Scope CurrentUser
+
+# Default run: the no-credentials probes (R1/R2/R3/R4; R7 if exports are mounted).
+ENTRYPOINT ["pwsh", "-NoProfile", "-File", "probes/Invoke-LinuxProbes.ps1"]

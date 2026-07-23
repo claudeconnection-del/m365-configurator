@@ -1,0 +1,5 @@
+# Keep the results directory and its template under version control, but never
+# commit generated run artifacts (which may reference tenant data or MOFs).
+*
+!.gitignore
+!RESULTS-template.md

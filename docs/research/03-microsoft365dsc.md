@@ -522,6 +522,8 @@ container would help, but does not remove the auth/credential conflicts.
 
 The hands-on container proof ADR-0002 requires should treat these as its test
 matrix. Each is a claim I could **not** fully verify from documentation alone.
+A runnable harness for exactly this matrix lives at
+[`spikes/03-microsoft365dsc-container-proof/`](../../spikes/03-microsoft365dsc-container-proof/).
 
 | # | Question / risk | How to prove |
 |---|---|---|
