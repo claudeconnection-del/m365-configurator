@@ -36,4 +36,9 @@ function Get-M365RequiredModule {
         Version = '3.10.0'
         Reason  = 'Exchange Online / Defender for Office 365 configuration'
     }
+    [pscustomobject]@{
+        Name    = 'powershell-yaml'
+        Version = '0.4.12'
+        Reason  = 'Profile authoring/parsing (YAML authored, JSON canonical) — ADR-0008'
+    }
 }
