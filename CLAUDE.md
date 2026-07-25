@@ -68,6 +68,11 @@ ADR-0002 was ratified without it) is archived at tag
 `archive/m365dsc-container-proof` (owner decision, 2026-07-24). Recover it from
 the tag if the planned M365DSC export-tooling reuse ever wants its probes.
 
+S18–S20 (audit log, CLI dispatcher, close-out) were built on a dedicated branch,
+`claude/runbook-build-s18-s20-3boy73` — an explicit harness override for that
+session, not a change to the standing convention above. Fast-forward merged into
+`main` at `6d6ebda` (2026-07-25; CI green, 307 Pester tests) and deleted.
+
 Never push to a branch other than your designated one without explicit
 permission. Reference Jira issues in commits where applicable (e.g. `MCA-12: …`).
 
