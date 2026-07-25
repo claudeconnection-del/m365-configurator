@@ -270,7 +270,7 @@ pushed).
 - [x] **S12 · MCA-32** — MDO-10 external sender warning
 - [x] **S13 · MCA-33** — AUD-1 unified audit log
 - [x] **S14 · MCA-34** — AUD-2 mailbox auditing (org default)
-- [ ] **S15 · MCA-19** — Drift detection
+- [x] **S15 · MCA-19** — Drift detection
 - [ ] **S16 · MCA-20** — Deterministic remediation
 - [ ] **S17 · MCA-16** — Name remapping
 - [ ] **S18 · MCA-35** — Structured audit log
