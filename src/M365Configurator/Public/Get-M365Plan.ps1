@@ -68,6 +68,13 @@ function Get-M365Plan {
             })
     }
 
+    # Duplicate control ids in a profile would silently collapse during ordering
+    # (last-wins) and drop a control's intent — reject loudly instead (NFR-6).
+    $dupeIds = @($records.ToArray() | Group-Object -Property Id | Where-Object { $_.Count -gt 1 } | ForEach-Object { $_.Name })
+    if ($dupeIds.Count -gt 0) {
+        throw "Profile declares duplicate control id(s): $($dupeIds -join ', ')."
+    }
+
     # A handler's DependsOn must reference a real registered control (author-side
     # invariant — a typo is a packaging fault, not a silent no-op; NFR-6).
     foreach ($rec in $records) {
@@ -81,10 +88,10 @@ function Get-M365Plan {
     }
 
     # --- deterministic, cycle-detecting dependency order (Kahn) -------------------
-    $inPlan   = [System.Collections.Generic.HashSet[string]]::new([string[]] ($records.ToArray() | ForEach-Object { $_.Id }), [System.StringComparer]::Ordinal)
+    $inPlan   = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $recById  = @{}
     $indegree = @{}
-    foreach ($rec in $records) { $recById[$rec.Id] = $rec; $indegree[$rec.Id] = 0 }
+    foreach ($rec in $records) { [void] $inPlan.Add($rec.Id); $recById[$rec.Id] = $rec; $indegree[$rec.Id] = 0 }
 
     $dependents = @{}   # dependency id -> ids that depend on it (present in this plan)
     foreach ($rec in $records) {
@@ -153,12 +160,23 @@ function Get-M365Plan {
                 if ($null -ne $rec.Handler.Compare) {
                     $result = & $rec.Handler.Compare $rec.Desired $current
                     $action  = [string] (Get-M365MapValue $result 'Action')
-                    $changes = @(Get-M365MapValue $result 'Changes')
+                    # A Compare that omits Changes must yield an empty list, not @($null):
+                    # the renderer walks Changes and a $null entry crashes on .Path (NFR-6/NFR-9).
+                    $changes = @(Get-M365MapValue $result 'Changes' | Where-Object { $null -ne $_ })
                     if ($action -notin $validActions) {
                         throw "Control '$($rec.Id)' Compare returned Action '$action', which is not one of: $($validActions -join ', ')."
                     }
                 }
                 else {
+                    # The default compare only understands a settings MAP; a non-map
+                    # desired (e.g. an array of policies for a collection control) needs
+                    # a custom Compare — silently reporting NoChange would be a dangerous
+                    # false pass, so fail loud instead (NFR-6).
+                    if ($null -ne $rec.Desired -and
+                        $rec.Desired -isnot [System.Collections.IDictionary] -and
+                        $rec.Desired -isnot [System.Management.Automation.PSCustomObject]) {
+                        throw "Control '$($rec.Id)' has a non-map desired shape but no Compare; the default comparison only supports a settings map — provide a Compare handler."
+                    }
                     $changes = @(Get-M365ControlChange -Desired $rec.Desired -Current $current)
                     $action  = if ($changes.Count -gt 0) { 'Update' } else { 'NoChange' }
                 }

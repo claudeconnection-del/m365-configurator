@@ -39,6 +39,7 @@ function Format-M365Plan {
         if ($item.Gate) { $head += " ($($item.Gate))" }
         $head
         foreach ($change in @($item.Changes)) {
+            if ($null -eq $change) { continue }   # defensive: never crash the render on a stray null
             "        {0}: {1} -> {2}" -f $change.Path, $change.From, $change.To
         }
     }

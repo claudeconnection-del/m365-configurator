@@ -124,4 +124,29 @@ Describe 'Format-M365Plan (readable rendering, NFR-9)' {
             $joined   | Should -Match '\[=\] AM-2'
         }
     }
+
+    It 'renders the empty-plan line, and blocked/unsupported glyphs with their gate reason' {
+        InModuleScope M365Configurator {
+            $emptyProfile = [ordered]@{ schemaVersion = '1.0'; name = 'empty'; framework = 'X'; frameworkVersion = '1.0'; controls = @() }
+            $emptyLines   = Format-M365Plan -Plan (Get-M365Plan -Profile $emptyProfile -Registry @())
+            ($emptyLines -join "`n") | Should -Match 'profile declares no controls'
+
+            $registry = @(
+                New-M365Control -Id 'P2' -Provider 'graph' -Shape 'collection' -Title 'Risk CA' -RequiredCapabilities @('EntraIdP2') `
+                    -Get { param($Session) @{} } -Set { param($Session, $Desired, $Current) }
+            )
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'gated'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @(
+                    [ordered]@{ id = 'P2';    framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ on = $true } }
+                    [ordered]@{ id = 'GHOST'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ x = 1 } }
+                )
+            }
+            $joined = (Format-M365Plan -Plan (Get-M365Plan -Profile $profile -Registry $registry -Session @{ Capabilities = @() })) -join "`n"
+
+            $joined | Should -Match '\[!\] P2'
+            $joined | Should -Match 'requires capability'
+            $joined | Should -Match '\[\?\] GHOST'
+        }
+    }
 }

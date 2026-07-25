@@ -37,11 +37,11 @@ function New-M365SecurityDefaultsControl {
             # Endpoint is inlined (not closed over): the engine invokes this seam
             # in its own scope, where an enclosing local would not be in scope.
             $current = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/policies/identitySecurityDefaultsEnforcementPolicy'
-            @{ isEnabled = [bool] $current['isEnabled'] }
+            @{ isEnabled = [bool] (Get-M365MapValue $current 'isEnabled') }
         } `
         -Set {
             param($Session, $Desired, $Current)
-            $target = [bool] $Desired['isEnabled']
+            $target = [bool] (Get-M365MapValue $Desired 'isEnabled')
             Invoke-M365GraphRequest -Method PATCH `
                 -Uri 'v1.0/policies/identitySecurityDefaultsEnforcementPolicy' `
                 -Body @{ isEnabled = $target }

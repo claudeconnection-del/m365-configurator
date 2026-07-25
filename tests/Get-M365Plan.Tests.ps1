@@ -173,6 +173,54 @@ Describe 'Get-M365Plan' {
         { Get-M365Plan -Profile $profile -Registry $registry } | Should -Throw '*NOPE*'
     }
 
+    It 'handles an empty profile (no controls) as a clean pass, not a crash (review finding #1)' {
+        $profile = New-TestProfile @()
+
+        $plan = Get-M365Plan -Profile $profile -Registry @()
+
+        $plan.Signal      | Should -Be 'Pass'
+        @($plan.Items).Count | Should -Be 0
+    }
+
+    It 'rejects a profile with a duplicate control id loudly, never dropping one (review finding #2)' {
+        $registry = @(
+            New-M365Control -Id 'A' -Provider 'graph' -Shape 'singleton' -Title 'A' `
+                -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) }
+        )
+        $profile = New-TestProfile @(
+            New-TestControl -Id 'A' -Settings @{ v = 1 }
+            New-TestControl -Id 'A' -Settings @{ v = 2 }
+        )
+
+        { Get-M365Plan -Profile $profile -Registry $registry } | Should -Throw '*duplicate*'
+    }
+
+    It 'treats a custom Compare that omits Changes as an empty change list, not @($null) (review finding #3)' {
+        $registry = @(
+            New-M365Control -Id 'C' -Provider 'exo' -Shape 'preset' -Title 'Preset' `
+                -Get { param($Session) @{ state = 'on' } } -Set { param($Session, $Desired, $Current) } `
+                -Compare { param($Desired, $Current) @{ Action = 'Update' } }   # no Changes key
+        )
+        $profile = New-TestProfile @( New-TestControl -Id 'C' -Settings @{ state = 'on' } )
+
+        $plan = Get-M365Plan -Profile $profile -Registry $registry
+        $plan.Items[0].Action  | Should -Be 'Update'
+        @($plan.Items[0].Changes).Count | Should -Be 0
+    }
+
+    It 'fails loud on a non-map desired with no custom Compare, instead of a false NoChange (review finding #4)' {
+        $registry = @(
+            New-M365Control -Id 'COLL' -Provider 'graph' -Shape 'collection' -Title 'Collection' `
+                -Get { param($Session) @(1, 2) } -Set { param($Session, $Desired, $Current) }
+        )
+        # settings is an array (non-map) and the handler has no Compare.
+        $profile = New-TestProfile @(
+            [ordered]@{ id = 'COLL'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @('policy-a', 'policy-b') }
+        )
+
+        { Get-M365Plan -Profile $profile -Registry $registry } | Should -Throw '*non-map*'
+    }
+
     It 'summarises per-Action counts across a mixed plan' {
         $registry = @(
             New-M365Control -Id 'SAME' -Provider 'graph' -Shape 'singleton' -Title 'Same' `
