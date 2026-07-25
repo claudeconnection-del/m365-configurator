@@ -21,6 +21,7 @@ Describe 'Get-M365ControlRegistry — AM-2' {
         $am2.Provider   | Should -Be 'graph'
         $am2.Shape      | Should -Be 'singleton'
         @($am2.DependsOn).Count | Should -Be 0
+        $am2.RequiredCapabilities | Should -Be @('graph')
     }
 }
 
@@ -130,7 +131,7 @@ Describe 'AM-2 end-to-end through Get-M365Plan' {
             )
         }
 
-        $plan = Get-M365Plan -Profile $profile
+        $plan = Get-M365Plan -Profile $profile -Session @{ Capabilities = @('graph') }
         $am2  = $plan.Items | Where-Object { $_.Id -eq 'AM-2' }
 
         $am2.Action | Should -Be 'Update'

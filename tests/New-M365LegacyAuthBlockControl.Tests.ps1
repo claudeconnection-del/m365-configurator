@@ -50,6 +50,7 @@ Describe 'Get-M365ControlRegistry — ID-2' {
         $id2.Provider    | Should -Be 'graph'
         $id2.Shape       | Should -Be 'collection'
         $id2.DependsOn   | Should -Contain 'ID-1'
+        $id2.RequiredCapabilities | Should -Be @('graph')
     }
 }
 
@@ -185,7 +186,7 @@ Describe 'ID-2 end-to-end through Get-M365Plan' {
             New-TestControl -Id 'ID-1' -Settings @{ isEnabled = $false }
         )
 
-        $plan = Get-M365Plan -Profile $profile
+        $plan = Get-M365Plan -Profile $profile -Session @{ Capabilities = @('graph') }
 
         $plan.Items[0].Id | Should -Be 'ID-1'
         $plan.Items[1].Id | Should -Be 'ID-2'

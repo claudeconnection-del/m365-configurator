@@ -51,6 +51,7 @@ function New-M365WeakMfaMethodsControl {
 
     New-M365Control -Id 'AM-2' -Provider 'graph' -Shape 'singleton' `
         -Title 'Disable weak MFA methods (SMS / Voice / Email OTP)' `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             $policy = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/policies/authenticationMethodsPolicy'

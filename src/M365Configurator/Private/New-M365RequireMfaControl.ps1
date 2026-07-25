@@ -46,6 +46,7 @@ function New-M365RequireMfaControl {
     New-M365Control -Id 'ID-3' -Provider 'graph' -Shape 'collection' `
         -Title 'Require MFA for all users (Conditional Access)' `
         -DependsOn @('ID-1') `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             # Endpoint and well-known name are inlined (not closed over): the

@@ -28,6 +28,7 @@ Describe 'Get-M365ControlRegistry — SHR-1' {
         $shr1          | Should -Not -BeNullOrEmpty
         $shr1.Provider | Should -Be 'graph'
         $shr1.Shape    | Should -Be 'singleton'
+        $shr1.RequiredCapabilities | Should -Be @('graph')
     }
 }
 
@@ -84,7 +85,7 @@ Describe 'SHR-1 end-to-end through Get-M365Plan' {
                 settings = @{ allowInvitesFrom = 'adminsAndGuestInviters' } }
         )
 
-        $plan = Get-M365Plan -Profile $profile
+        $plan = Get-M365Plan -Profile $profile -Session @{ Capabilities = @('graph') }
         $shr1 = $plan.Items | Where-Object { $_.Id -eq 'SHR-1' }
 
         $shr1.Action | Should -Be 'Update'
@@ -111,7 +112,7 @@ Describe 'SHR-1 end-to-end through Get-M365Plan' {
                 settings = @{ allowedToCreateApps = $false } }
         )
 
-        $plan = Get-M365Plan -Profile $profile
+        $plan = Get-M365Plan -Profile $profile -Session @{ Capabilities = @('graph') }
         $shr1 = $plan.Items | Where-Object { $_.Id -eq 'SHR-1' }
         $con1 = $plan.Items | Where-Object { $_.Id -eq 'CON-1' }
 

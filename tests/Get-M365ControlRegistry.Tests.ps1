@@ -32,6 +32,7 @@ Describe 'Get-M365ControlRegistry' {
         $id1          | Should -Not -BeNullOrEmpty
         $id1.Provider | Should -Be 'graph'
         $id1.Shape    | Should -Be 'singleton'
+        $id1.RequiredCapabilities | Should -Be @('graph')
     }
 }
 

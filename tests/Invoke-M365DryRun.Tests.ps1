@@ -140,7 +140,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Uri -eq 'v1.0/policies/adminConsentRequestPolicy') { return $script:adminConsentRequestPolicyMatchingProfile }
         }
 
-        $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
+        $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -Session @{ Capabilities = @('graph') } -InformationAction Ignore
         $id1  = $plan.Items | Where-Object { $_.Id -eq 'ID-1' }
 
         $plan.Signal         | Should -Be 'NeedsAttention'
@@ -159,7 +159,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Uri -eq 'v1.0/policies/adminConsentRequestPolicy') { return $script:adminConsentRequestPolicyMatchingProfile }
         }
 
-        $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
+        $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -Session @{ Capabilities = @('graph') } -InformationAction Ignore
 
         $plan.Signal | Should -Be 'Pass'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-1' }).Action | Should -Be 'NoChange'

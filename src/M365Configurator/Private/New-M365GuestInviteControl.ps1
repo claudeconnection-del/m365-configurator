@@ -34,6 +34,7 @@ function New-M365GuestInviteControl {
 
     New-M365Control -Id 'SHR-1' -Provider 'graph' -Shape 'singleton' `
         -Title 'Restrict who can invite guests' `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             $policy = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/policies/authorizationPolicy'

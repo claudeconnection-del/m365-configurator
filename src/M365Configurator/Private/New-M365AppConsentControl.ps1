@@ -53,6 +53,7 @@ function New-M365AppConsentControl {
 
     New-M365Control -Id 'CON-1' -Provider 'graph' -Shape 'singleton' `
         -Title 'Restrict user app consent and app registration' `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             $policy = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/policies/authorizationPolicy'

@@ -43,6 +43,7 @@ function New-M365AdminConsentWorkflowControl {
 
     New-M365Control -Id 'CON-2' -Provider 'graph' -Shape 'singleton' `
         -Title 'Admin consent request workflow' `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             $policy = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/policies/adminConsentRequestPolicy'

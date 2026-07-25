@@ -32,6 +32,7 @@ function New-M365SecurityDefaultsControl {
 
     New-M365Control -Id 'ID-1' -Provider 'graph' -Shape 'singleton' `
         -Title 'Microsoft Entra security defaults' `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             # Endpoint is inlined (not closed over): the engine invokes this seam

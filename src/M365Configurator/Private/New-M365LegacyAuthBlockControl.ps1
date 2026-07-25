@@ -53,6 +53,7 @@ function New-M365LegacyAuthBlockControl {
     New-M365Control -Id 'ID-2' -Provider 'graph' -Shape 'collection' `
         -Title 'Block legacy authentication (Conditional Access)' `
         -DependsOn @('ID-1') `
+        -RequiredCapabilities @('graph') `
         -Get {
             param($Session)
             # Endpoint and well-known name are inlined (not closed over): the

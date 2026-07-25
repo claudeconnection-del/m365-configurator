@@ -28,6 +28,7 @@ Describe 'Get-M365ControlRegistry — CON-1' {
         $con1          | Should -Not -BeNullOrEmpty
         $con1.Provider | Should -Be 'graph'
         $con1.Shape    | Should -Be 'singleton'
+        $con1.RequiredCapabilities | Should -Be @('graph')
     }
 }
 
@@ -134,7 +135,7 @@ Describe 'CON-1 end-to-end through Get-M365Plan' {
             )
         }
 
-        $plan = Get-M365Plan -Profile $profile
+        $plan = Get-M365Plan -Profile $profile -Session @{ Capabilities = @('graph') }
         $con1 = $plan.Items | Where-Object { $_.Id -eq 'CON-1' }
 
         $con1.Action | Should -Be 'Update'
