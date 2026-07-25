@@ -14,10 +14,10 @@ function Get-M365ControlRegistry {
         packaging fault and fails loud here (NFR-6), never silently shadowing another.
 
         v1 slice: the Graph ID-1 security-defaults singleton, the ID-2/ID-3
-        Conditional Access collections, and the AM-2 weak-MFA-methods
-        singleton; further Graph (MCA-4) and Exchange Online (MCA-5) controls
-        register here as they land, each an additive one-line entry
-        (ADR-0013).
+        Conditional Access collections, the AM-2 weak-MFA-methods singleton,
+        and the CON-1 consent/app-registration singleton; further Graph
+        (MCA-4) and Exchange Online (MCA-5) controls register here as they
+        land, each an additive one-line entry (ADR-0013).
 
     .OUTPUTS
         pscustomobject[] (each PSTypeName 'M365Configurator.Control').
@@ -31,6 +31,7 @@ function Get-M365ControlRegistry {
         New-M365LegacyAuthBlockControl
         New-M365RequireMfaControl
         New-M365WeakMfaMethodsControl
+        New-M365AppConsentControl
     )
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)

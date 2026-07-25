@@ -72,3 +72,18 @@ controls:
       sms: disabled
       voice: disabled
       email: disabled
+
+  # CON-1 — Restrict user app consent + only admins register apps (SCuBA
+  # MS.AAD.5.2v1 + 5.1v1). userConsentPolicies is the
+  # managePermissionGrantsForSelf.* half only; empty [] disables user consent
+  # entirely (stricter SCuBA posture) — low-risk is the shipped default.
+  # Set re-reads the live policy to preserve any
+  # managePermissionGrantsForOwnedResource.* entries untouched.
+  - id: CON-1
+    name: Restrict user app consent and app registration
+    provider: graph
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      allowedToCreateApps: false
+      userConsentPolicies: [managePermissionGrantsForSelf.microsoft-user-default-low]
