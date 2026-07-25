@@ -1371,18 +1371,22 @@ ValidateSet (assert the error).
 
 ## S20 — Close-out (no Jira story; ~30 min)
 
-- [ ] `docs/REQUIREMENTS.md`: flip status boxes — FR-1..FR-12 and NFRs that
+- [x] `docs/REQUIREMENTS.md`: flip status boxes — FR-1..FR-12 and NFRs that
   are now demonstrably satisfied get `[x]` (FR-4 stays `[~]` — the v1 slice
   covers a subset of the surface; NFR-4 stays `[ ]` until the container ships
   in Phase 5).
-- [ ] `docs/ROADMAP.md`: mark Phase 4 complete/near-complete per reality.
-- [ ] `CLAUDE.md`: update the roadmap-phase line; keep the runbook pointer.
-- [ ] Confluence page `1048577`: update Status paragraph, build-status
+- [x] `docs/ROADMAP.md`: mark Phase 4 complete/near-complete per reality.
+- [x] `CLAUDE.md`: update the roadmap-phase line; keep the runbook pointer.
+- [x] Confluence page `1048577`: update Status paragraph, build-status
   bullets, epics table, and the coordination block (lanes free / Phase 4
   state). Jira: every story Done; epics MCA-4/5/6 transition when their
   stories are all Done.
-- [ ] Push, verify CI green on both matrix legs, and confirm
-  `git status` clean + `main` synced with `origin/main`.
+- [x] Push, verify CI green on both matrix legs, and confirm `git status`
+  clean + the branch synced with its remote. This session's harness assigned
+  a dedicated designated branch (`claude/runbook-build-s18-s20-3boy73`)
+  rather than committing straight to `main` as CONTRIBUTING §2/this file
+  otherwise say — an explicit harness override for this session, not a
+  change to the standing convention. `main` merge is left to the repo owner.
 
 ## When something surprises you
 

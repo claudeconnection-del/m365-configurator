@@ -104,13 +104,14 @@ review to a different agent.
 `Phase 0 bootstrap ✅ → Phase 1 research ✅ → Phase 2 design checkpoint ✅ (decisions
 ratified as ADRs 0001–0015) → Phase 3 Jira planning ✅ (MCA backlog:
 8 workstream epics + 29 stories; v1 slice fully decomposed, 2026-07-22) →
-**Phase 4 build** → Phase 5 harden & ship.`
+**Phase 4 build ✅** (docs/RUNBOOK.md queue S1–S20 all landed, 2026-07-25;
+307 Pester tests) → **Phase 5 harden & ship**.`
 
-**Building Phase 4? Open [`docs/RUNBOOK.md`](docs/RUNBOOK.md) first.** It is
-the authoritative, ordered story queue for the rest of the phase: every
-remaining story has a full implementation spec (files, endpoints, tests,
-pre-made decisions) plus the work-loop protocol (claim → TDD → review → land).
-Work it top to bottom; do not re-derive decisions it already makes.
+**`docs/RUNBOOK.md`'s queue is empty** — Phase 4 is done. It remains the
+historical record of every story's spec, pre-made decisions, and work-loop
+protocol; Phase 5 (security review, container, reproducible release) doesn't
+yet have its own runbook — open [`docs/ROADMAP.md`](docs/ROADMAP.md) and
+[`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md) first if you're starting it.
 
 Full plan in [`docs/ROADMAP.md`](docs/ROADMAP.md); open decisions in
 [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md). **The `/resume` command

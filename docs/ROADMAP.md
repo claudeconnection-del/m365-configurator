@@ -41,11 +41,20 @@ mirrored in Confluence.
   fixed in [`CONTRIBUTING.md`](../CONTRIBUTING.md) (an agent never reviews its
   own code).
 
-## Phase 4 — Build
+## Phase 4 — Build  ✅ (v1 slice complete, 2026-07-25)
 
 - Implement in vertical slices, each with dry-run and tests.
 - **An agent never reviews its own code** — separate author and reviewer.
 - Parallelize independent workstreams.
+
+The full `docs/RUNBOOK.md` queue (S1–S20) landed: CI, the apply engine, all
+eleven v1-slice Graph + Exchange Online controls, session/capability gating,
+drift detection, deterministic remediation, per-client name remapping, the
+structured audit log, and the CLI dispatcher — 307 Pester tests, each story
+independently reviewed per CONTRIBUTING §4. FR-4 (configuration surface)
+stays partial by design: the ~11-control v1 slice is a deliberately scoped
+subset of the full Graph/EXO surface (see docs/REQUIREMENTS.md and the
+RUNBOOK's "deliberately NOT building in v1" list), not a gap to close here.
 
 ## Phase 5 — Harden & ship
 
