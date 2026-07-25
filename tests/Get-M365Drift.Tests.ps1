@@ -98,6 +98,28 @@ Describe 'Get-M365Drift' {
         $report.Signal        | Should -Be 'InSync'
         $report.Items[0].Status | Should -Be 'InSync'
     }
+
+    It 'threads -NameOverride to both the desired settings and the session (MCA-16)' {
+        InModuleScope M365Configurator {
+            $registry = @(
+                New-M365Control -Id 'ID-2' -Provider 'graph' -Shape 'collection' -Title 'Fake ID-2' `
+                    -Get {
+                        param($Session)
+                        @{ displayName = (Get-M365MapValue (Get-M365MapValue $Session 'NameOverride') 'ID-2') }
+                    } `
+                    -Set { param($Session, $Desired, $Current) }
+            )
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @( [ordered]@{ id = 'ID-2'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ displayName = 'Block legacy authentication' } } )
+            }
+
+            $report = Get-M365Drift -Profile $profile -Registry $registry -NameOverride @{ 'ID-2' = 'Contoso - Block legacy auth' } -InformationAction Ignore
+
+            # Get's session-threaded name matched the rewritten desired name -> InSync.
+            $report.Items[0].Status | Should -Be 'InSync'
+        }
+    }
 }
 
 Describe 'Format-M365DriftReport (readable rendering, NFR-9)' {

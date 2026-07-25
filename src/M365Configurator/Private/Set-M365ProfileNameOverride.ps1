@@ -58,18 +58,21 @@ function Set-M365ProfileNameOverride {
     }
 
     function Copy-M365Map {
-        param($Map)
+        param([AllowNull()] $Map)
         $copy = [ordered]@{}
+        if ($null -eq $Map) { return $copy }
         $keys = if ($Map -is [System.Collections.IDictionary]) { @($Map.Keys) } else { @($Map.PSObject.Properties.Name) }
         foreach ($key in $keys) { $copy[[string] $key] = Get-M365MapValue $Map ([string] $key) }
         $copy
     }
 
+    $matched = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $newControls = [System.Collections.Generic.List[object]]::new()
     foreach ($control in @(Get-M365MapValue $InputObject 'controls')) {
         $id = [string] (Get-M365MapValue $control 'id')
 
         if ($NameOverride.ContainsKey($id)) {
+            [void] $matched.Add($id)
             $newName = $NameOverride[$id]
             $key     = $nameBearingKey[$id]
 
@@ -85,6 +88,14 @@ function Set-M365ProfileNameOverride {
         else {
             $newControls.Add($control)
         }
+    }
+
+    # An override id that never matched a control in this profile is a silent
+    # no-op waiting to happen (the caller thinks they remapped something, the
+    # profile is unchanged) — fail loud instead (NFR-6).
+    $unmatched = @($NameOverride.Keys | Where-Object { -not $matched.Contains($_) })
+    if ($unmatched.Count -gt 0) {
+        throw "Cannot remap control(s) $($unmatched -join ', '): not declared in this profile."
     }
 
     $newProfile = Copy-M365Map $InputObject

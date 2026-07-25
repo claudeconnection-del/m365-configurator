@@ -86,6 +86,18 @@ Describe 'Set-M365ProfileNameOverride' {
         }
     }
 
+    It 'throws when a name-scoped override id is not present among the profile''s controls (NFR-6: no silent no-op)' {
+        InModuleScope M365Configurator {
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @( [ordered]@{ id = 'ID-1'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ isEnabled = $false } } )
+            }
+
+            # MDO-4 is a known name-scoped id, but this profile never declares it.
+            { Set-M365ProfileNameOverride -InputObject $profile -NameOverride @{ 'MDO-4' = 'Contoso Outbound Spam' } } | Should -Throw '*MDO-4*'
+        }
+    }
+
     It 'returns the effective-name map alongside the rewritten profile' {
         InModuleScope M365Configurator {
             $profile = [ordered]@{

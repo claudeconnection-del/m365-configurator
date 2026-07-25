@@ -71,14 +71,7 @@ function Get-M365Drift {
     if ($NameOverride -and $NameOverride.Count -gt 0) {
         $renamed = Set-M365ProfileNameOverride -InputObject $profileObject -NameOverride $NameOverride
         $profileObject = $renamed.Profile
-
-        $Session = if ($null -eq $Session) { @{} } elseif ($Session -is [System.Collections.IDictionary]) { $Session.Clone() } else { $Session.PSObject.Copy() }
-        if ($Session -is [System.Collections.IDictionary]) {
-            $Session['NameOverride'] = $renamed.NameOverride
-        }
-        else {
-            Add-Member -InputObject $Session -NotePropertyName 'NameOverride' -NotePropertyValue $renamed.NameOverride -Force
-        }
+        $Session = Set-M365SessionNameOverride -Session $Session -NameOverride $renamed.NameOverride
     }
 
     Write-Verbose 'Drift: computing plan (read-only; no changes are applied).'
