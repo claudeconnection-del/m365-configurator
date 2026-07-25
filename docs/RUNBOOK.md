@@ -135,9 +135,8 @@ Facts you will otherwise rediscover slowly:
 - Connect state objects (from `Connect-M365Graph` / `Connect-M365ExchangeOnline`)
   are secret-free projections; neither carries `Capabilities` yet — MCA-21
   introduces the session object (D8).
-- The Pester suite stands at **142 green** as of commit `6b4f525` (the
-  MCA-39 review fixes); MCA-29's merge adds 11 more. Every story adds tests
-  and never breaks existing ones.
+- The Pester suite stands at **153 green** as of the MCA-29 merge. Every
+  story adds tests and never breaks existing ones.
 
 ## Pre-made decisions
 
