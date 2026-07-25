@@ -54,6 +54,23 @@ Describe 'Write-M365AuditRecord' {
         }
     }
 
+    It 'preserves the caller''s key order in the written JSONL line (readable, deterministic audit trail — NFR-9)' {
+        InModuleScope M365Configurator {
+            $dir = Join-Path "$TestDrive" 'ordered'
+
+            # A [hashtable]-typed -Record parameter would silently convert this
+            # [ordered] dictionary to an unordered Hashtable, scrambling field
+            # order across process runs — Write-M365AuditRecord must accept it
+            # as-is (IDictionary) so the caller's order survives verbatim.
+            Write-M365AuditRecord -Record ([ordered]@{ z = 1; a = 2; m = 3; timestamp = 'x' }) -LogDirectory $dir
+
+            $expectedFile = "m365config-audit-$([DateTime]::UtcNow.ToString('yyyyMMdd')).jsonl"
+            $line = Get-Content -LiteralPath (Join-Path $dir $expectedFile)
+
+            $line | Should -Be '{"z":1,"a":2,"m":3,"timestamp":"x"}'
+        }
+    }
+
     It 'honors the M365_CONFIGURATOR_LOG_DIR environment variable when -LogDirectory is not supplied' {
         InModuleScope M365Configurator {
             $dir = Join-Path "$TestDrive" 'env-dir'

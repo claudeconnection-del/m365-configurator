@@ -24,6 +24,21 @@ BeforeAll {
         param([string] $Id, [hashtable] $Settings)
         [ordered]@{ id = $Id; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = $Settings }
     }
+
+    # -Approve here goes through Invoke-M365PlanApplication's real default
+    # AuditWriter (D10/MCA-35), which writes JSONL via Write-M365AuditRecord.
+    # Redirect it to a throwaway scratch directory so these tests never touch
+    # the real './logs' (or the repo working directory).
+    $script:m365AuditTestLogDir  = Join-Path ([System.IO.Path]::GetTempPath()) "m365-audit-test-$([guid]::NewGuid())"
+    $script:m365AuditPreviousDir = $env:M365_CONFIGURATOR_LOG_DIR
+    $env:M365_CONFIGURATOR_LOG_DIR = $script:m365AuditTestLogDir
+}
+
+AfterAll {
+    $env:M365_CONFIGURATOR_LOG_DIR = $script:m365AuditPreviousDir
+    if (Test-Path -LiteralPath $script:m365AuditTestLogDir) {
+        Remove-Item -LiteralPath $script:m365AuditTestLogDir -Recurse -Force
+    }
 }
 
 Describe 'Invoke-M365Remediation' {

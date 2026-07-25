@@ -22,6 +22,22 @@ BeforeAll {
         param([string] $Id, [hashtable] $Settings)
         [ordered]@{ id = $Id; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = $Settings }
     }
+
+    # Every -Approve call in this file that doesn't inject its own -AuditWriter
+    # falls through to Invoke-M365PlanApplication's real default (D10/MCA-35),
+    # which writes JSONL via Write-M365AuditRecord. Redirect that default to a
+    # throwaway scratch directory for the whole file so these engine tests
+    # never touch the real './logs' (or the repo working directory).
+    $script:m365AuditTestLogDir  = Join-Path ([System.IO.Path]::GetTempPath()) "m365-audit-test-$([guid]::NewGuid())"
+    $script:m365AuditPreviousDir = $env:M365_CONFIGURATOR_LOG_DIR
+    $env:M365_CONFIGURATOR_LOG_DIR = $script:m365AuditTestLogDir
+}
+
+AfterAll {
+    $env:M365_CONFIGURATOR_LOG_DIR = $script:m365AuditPreviousDir
+    if (Test-Path -LiteralPath $script:m365AuditTestLogDir) {
+        Remove-Item -LiteralPath $script:m365AuditTestLogDir -Recurse -Force
+    }
 }
 
 Describe 'Invoke-M365Apply' {
@@ -218,7 +234,7 @@ Describe 'Invoke-M365PlanApplication (private per-item application loop)' {
         }
     }
 
-    It 'emits run-started / apply-item / run-finished records via the injected AuditWriter, in order, with the right shape (MCA-35, D10)' {
+    It 'emits run-started / apply-item / run-finished records via the injected AuditWriter, in order, with the right shape and stable field order (MCA-35, D10)' {
         InModuleScope M365Configurator {
             $registry = @(
                 New-M365Control -Id 'ONE' -Provider 'graph' -Shape 'singleton' -Title 'One' `
@@ -233,7 +249,10 @@ Describe 'Invoke-M365PlanApplication (private per-item application loop)' {
             }
             $plan = Get-M365Plan -Profile $profile -Registry $registry -Session $session
 
-            $captured = [System.Collections.Generic.List[hashtable]]::new()
+            # List[object], not List[hashtable]: a strongly-typed hashtable list
+            # would coerce the engine's [ordered] records to unordered
+            # Hashtables on .Add(), hiding the very ordering this test verifies.
+            $captured = [System.Collections.Generic.List[object]]::new()
             $auditWriter = { param($Record) $captured.Add($Record) }.GetNewClosure()
 
             $result = Invoke-M365PlanApplication -Plan $plan -Session $session -Registry $registry -AuditWriter $auditWriter
@@ -244,45 +263,73 @@ Describe 'Invoke-M365PlanApplication (private per-item application loop)' {
             $captured[0].runId | Should -Not -BeNullOrEmpty
             $captured[0].profileName | Should -Be 'baseline'
             $captured[0].itemCount | Should -Be 1
+            # Documented D10 schema order (plus the run-started extras) — proves
+            # the engine builds [ordered] records, not plain (hash-order) ones.
+            @($captured[0].Keys) | Should -Be @('timestamp', 'actor', 'runId', 'action', 'controlId', 'outcome', 'changes', 'error', 'profileName', 'itemCount')
 
             $captured[1].action    | Should -Be 'apply-item'
             $captured[1].controlId | Should -Be 'ONE'
             $captured[1].outcome   | Should -Be 'Applied'
             $captured[1].runId     | Should -Be $captured[0].runId
+            # The item's Changes (Path/From/To) must survive onto its audit record.
+            @($captured[1].changes).Count | Should -Be 1
+            $captured[1].changes[0].Path  | Should -Be 'v'
+            $captured[1].changes[0].From  | Should -Be 1
+            $captured[1].changes[0].To    | Should -Be 2
 
             $captured[2].action  | Should -Be 'run-finished'
             $captured[2].outcome | Should -Be 'Applied'
             $captured[2].runId   | Should -Be $captured[0].runId
+            $captured[2].counts.Applied | Should -Be 1
 
             $result.Outcome | Should -Be 'Applied'
         }
     }
 
-    It 'logs the error on the failing apply-item record and reports run-finished Outcome Failed (MCA-35, D10)' {
+    It 'logs the error and NotAttempted follow-on items on their own apply-item records, and reports run-finished Outcome Failed (MCA-35, D10)' {
         InModuleScope M365Configurator {
             $registry = @(
                 New-M365Control -Id 'ONE' -Provider 'graph' -Shape 'singleton' -Title 'One' `
+                    -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) @{ ok = $true } }
+                New-M365Control -Id 'TWO' -Provider 'graph' -Shape 'singleton' -Title 'Two' `
                     -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) throw 'tenant rejected the change' }
+                New-M365Control -Id 'THREE' -Provider 'graph' -Shape 'singleton' -Title 'Three' `
+                    -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) @{ ok = $true } }
             )
             $profile = [ordered]@{
                 schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
                 controls = @(
-                    [ordered]@{ id = 'ONE'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } }
+                    [ordered]@{ id = 'ONE';   framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } }
+                    [ordered]@{ id = 'TWO';   framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } }
+                    [ordered]@{ id = 'THREE'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } }
                 )
             }
             $plan = Get-M365Plan -Profile $profile -Registry $registry
 
-            $captured = [System.Collections.Generic.List[hashtable]]::new()
+            $captured = [System.Collections.Generic.List[object]]::new()
             $auditWriter = { param($Record) $captured.Add($Record) }.GetNewClosure()
 
             $null = Invoke-M365PlanApplication -Plan $plan -Registry $registry -AuditWriter $auditWriter
 
-            $itemRecord = $captured | Where-Object { $_.action -eq 'apply-item' }
-            $itemRecord.outcome | Should -Be 'Failed'
-            $itemRecord.error   | Should -Match 'tenant rejected the change'
+            $itemRecords = @($captured | Where-Object { $_.action -eq 'apply-item' })
+            $itemRecords.Count | Should -Be 3
+
+            ($itemRecords | Where-Object controlId -eq 'ONE').outcome   | Should -Be 'Applied'
+            ($itemRecords | Where-Object controlId -eq 'ONE').error     | Should -BeNullOrEmpty
+
+            $failedRecord = $itemRecords | Where-Object controlId -eq 'TWO'
+            $failedRecord.outcome | Should -Be 'Failed'
+            $failedRecord.error   | Should -Match 'tenant rejected the change'
+
+            $notAttemptedRecord = $itemRecords | Where-Object controlId -eq 'THREE'
+            $notAttemptedRecord.outcome | Should -Be 'NotAttempted'
+            $notAttemptedRecord.error   | Should -BeNullOrEmpty
 
             $finished = $captured | Where-Object { $_.action -eq 'run-finished' }
-            $finished.outcome | Should -Be 'Failed'
+            $finished.outcome        | Should -Be 'Failed'
+            $finished.counts.Applied | Should -Be 1
+            $finished.counts.Failed  | Should -Be 1
+            $finished.counts.NotAttempted | Should -Be 1
         }
     }
 

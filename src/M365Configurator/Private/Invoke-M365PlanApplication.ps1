@@ -53,7 +53,8 @@ function Invoke-M365PlanApplication {
 
         [Parameter(Mandatory)] $Registry,
 
-        # Injected audit sink: receives one [hashtable] record per call. Default
+        # Injected audit sink: receives one ordered-dictionary record per call
+        # (order preserved deliberately — see Write-M365AuditRecord). Default
         # persists it via Write-M365AuditRecord (JSONL; NFR-1-guarded).
         [scriptblock] $AuditWriter = { param($Record) Write-M365AuditRecord -Record $Record }
     )
@@ -64,7 +65,7 @@ function Invoke-M365PlanApplication {
     $runId = [guid]::NewGuid().ToString()
     $actor = Get-M365MapValue (Get-M365MapValue $Session 'Graph') 'Account'
 
-    & $AuditWriter @{
+    & $AuditWriter ([ordered]@{
         timestamp   = [DateTime]::UtcNow.ToString('o')
         actor       = $actor
         runId       = $runId
@@ -75,7 +76,7 @@ function Invoke-M365PlanApplication {
         error       = $null
         profileName = $Plan.ProfileName
         itemCount   = @($Plan.Items).Count
-    }
+    })
 
     $items  = [System.Collections.Generic.List[object]]::new()
     $failed = $false
@@ -121,7 +122,7 @@ function Invoke-M365PlanApplication {
             throw "Cannot apply control '$($planItem.Id)': its plan Action is '$($planItem.Action)', which must be resolved (Blocked/Unsupported items need to be gated before Invoke-M365PlanApplication is called)."
         }
 
-        & $AuditWriter @{
+        & $AuditWriter ([ordered]@{
             timestamp = [DateTime]::UtcNow.ToString('o')
             actor     = $actor
             runId     = $runId
@@ -130,7 +131,7 @@ function Invoke-M365PlanApplication {
             outcome   = $outcome
             changes   = @($planItem.Changes)
             error     = $itemError
-        }
+        })
     }
 
     $outcome =
@@ -138,7 +139,7 @@ function Invoke-M365PlanApplication {
         elseif (@($items | Where-Object Outcome -eq 'Applied').Count -gt 0) { 'Applied' }
         else { 'NothingToDo' }
 
-    & $AuditWriter @{
+    & $AuditWriter ([ordered]@{
         timestamp = [DateTime]::UtcNow.ToString('o')
         actor     = $actor
         runId     = $runId
@@ -153,7 +154,7 @@ function Invoke-M365PlanApplication {
             Failed       = @($items | Where-Object Outcome -eq 'Failed').Count
             NotAttempted = @($items | Where-Object Outcome -eq 'NotAttempted').Count
         }
-    }
+    })
 
     [pscustomobject]@{
         PSTypeName  = 'M365Configurator.ApplyResult'

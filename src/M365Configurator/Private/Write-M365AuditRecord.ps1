@@ -22,11 +22,20 @@ function Write-M365AuditRecord {
         accepted, documented tradeoff for keeping the file name pure and
         deterministic from "now".
 
+        -Record is typed [System.Collections.IDictionary] rather than
+        [hashtable] deliberately: a [hashtable]-typed parameter converts an
+        [ordered] dictionary into an unordered Hashtable at bind time, whose
+        enumeration order is hash-seed-dependent and differs across process
+        runs — scrambling the JSONL field order (a readability/NFR-9
+        regression for a human-audited log). IDictionary accepts the caller's
+        [ordered] hashtable as-is, so ConvertTo-Json emits keys in the order
+        the caller built them, deterministically.
+
         Internal helper; not exported.
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)] [hashtable] $Record,
+        [Parameter(Mandatory)] [System.Collections.IDictionary] $Record,
 
         [string] $LogDirectory
     )
