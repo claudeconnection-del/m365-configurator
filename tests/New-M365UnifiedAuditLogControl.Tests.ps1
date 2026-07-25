@@ -53,6 +53,15 @@ Describe 'AUD-1 unified-audit-log control (wired via the registry)' {
         $current['unifiedAuditLogIngestionEnabled']      | Should -BeTrue
     }
 
+    It 'Get throws when Get-AdminAuditLogConfig returns nothing (broken EXO session)' {
+        Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
+            param($Name, $Parameters)
+            if ($Name -eq 'Get-AdminAuditLogConfig') { return $null }
+        }
+
+        { & $script:aud1.Get $null } | Should -Throw '*Get-AdminAuditLogConfig*'
+    }
+
     It 'Set calls Set-AdminAuditLogConfig with the desired flag' {
         Mock Invoke-M365ExoCommand -ModuleName M365Configurator { }
         $desired = @{ unifiedAuditLogIngestionEnabled = $true }

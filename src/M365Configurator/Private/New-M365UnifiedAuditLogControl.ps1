@@ -21,7 +21,10 @@ function New-M365UnifiedAuditLogControl {
         default since 2019, so the control usually plans NoChange; it
         exists to catch the turned-it-off case, and it is NOT on by default
         for Business Basic/Standard/Premium licenses, where it is
-        genuinely actionable.
+        genuinely actionable. `Get-AdminAuditLogConfig` returning nothing
+        means a broken EXO session, not "ingestion is off" — `Get` throws
+        rather than silently defaulting to `$false` (NFR-6; same convention
+        as MDO-4/MDO-10).
 
         **Propagation note (do not "fix"):** enabling can take up to 60
         minutes to apply tenant-wide (longer to become searchable). Apply
@@ -48,6 +51,10 @@ function New-M365UnifiedAuditLogControl {
         -Get {
             param($Session)
             $config = Invoke-M365ExoCommand -Name 'Get-AdminAuditLogConfig'
+
+            if ($null -eq $config) {
+                throw "unified audit log config not found — Get-AdminAuditLogConfig should always return the tenant config; this indicates a broken EXO session."
+            }
 
             @{
                 unifiedAuditLogIngestionEnabled = [bool] (Get-M365MapValue $config 'UnifiedAuditLogIngestionEnabled')
