@@ -1,0 +1,23 @@
+# M365 Configurator — reference security baseline (v1 slice, in progress).
+#
+# Config-only and credential-free (ADR-0009): safe to commit and share. Authored
+# in YAML; the tool treats JSON as the canonical diff form (ADR-0008). Each control
+# is tagged with its framework + pinned framework version so a re-run is reproducible.
+#
+# This baseline grows one control at a time as the providers land (MCA-4 / MCA-5).
+# Today it carries the identity ordering prerequisite, ID-1.
+schemaVersion: "1.0"
+name: security-baseline
+framework: CISA-SCuBA
+frameworkVersion: "1.5.0"
+controls:
+  # ID-1 — Microsoft Entra security defaults. Turned OFF because this baseline
+  # ships Conditional Access policies, which are mutually exclusive with security
+  # defaults; ID-1 must be off before CA enforces (the CA controls DependsOn ID-1).
+  - id: ID-1
+    name: Microsoft Entra security defaults
+    provider: graph
+    framework: Microsoft-SecurityDefaults
+    frameworkVersion: "1.0"
+    settings:
+      isEnabled: false
