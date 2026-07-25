@@ -78,6 +78,24 @@ Describe 'Read-M365ControlState' {
         $original['id']          | Should -Be 'tenant-guid-123'
     }
 
+    It 'strips the stashed id key from a COPY when Get returns a pscustomobject (not just a hashtable)' {
+        $original = [pscustomobject]@{ displayName = 'X'; state = 'enabled'; id = 'tenant-guid-456' }
+        $registry = @(
+            New-M365Control -Id 'ID-3' -Provider 'graph' -Shape 'collection' -Title 'ID-3' -RequiredCapabilities @('graph') `
+                -Get { param($Session) $original } -Set { param($Session, $Desired, $Current) }
+        )
+        $session = [pscustomobject]@{ Capabilities = @('graph') }
+
+        $result = @(Read-M365ControlState -Session $session -Registry $registry)
+
+        $result[0].settings             | Should -BeOfType [hashtable]
+        $result[0].settings.Keys        | Should -Not -Contain 'id'
+        $result[0].settings.displayName | Should -Be 'X'
+        # The object Get actually returned must be untouched.
+        $original.PSObject.Properties.Name | Should -Contain 'id'
+        $original.id                       | Should -Be 'tenant-guid-456'
+    }
+
     It 'defaults -Registry to the real Get-M365ControlRegistry' {
         Mock Get-M365ControlRegistry -ModuleName M365Configurator {
             @(New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' -RequiredCapabilities @('graph') `
