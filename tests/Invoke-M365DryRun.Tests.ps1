@@ -158,8 +158,13 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Uri -eq 'v1.0/policies/authorizationPolicy') { return $script:authorizationPolicyMatchingProfile }
             if ($Uri -eq 'v1.0/policies/adminConsentRequestPolicy') { return $script:adminConsentRequestPolicyMatchingProfile }
         }
+        Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
+            param($Name, $Parameters)
+            if ($Name -eq 'Get-EOPProtectionPolicyRule') { return [pscustomobject]@{ State = 'Enabled' } }
+            if ($Name -eq 'Get-ATPProtectionPolicyRule') { return [pscustomobject]@{ State = 'Enabled' } }
+        }
 
-        $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -Session @{ Capabilities = @('graph') } -InformationAction Ignore
+        $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -Session @{ Capabilities = @('graph', 'exo', 'defender-office365') } -InformationAction Ignore
 
         $plan.Signal | Should -Be 'Pass'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-1' }).Action | Should -Be 'NoChange'
@@ -169,6 +174,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         ($plan.Items | Where-Object { $_.Id -eq 'CON-1' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'CON-2' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'SHR-1' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'MDO-1' }).Action | Should -Be 'NoChange'
     }
 }
 

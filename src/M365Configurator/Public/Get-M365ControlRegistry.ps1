@@ -15,10 +15,10 @@ function Get-M365ControlRegistry {
 
         v1 slice: the Graph ID-1 security-defaults singleton, the ID-2/ID-3
         Conditional Access collections, the AM-2 weak-MFA-methods singleton,
-        the CON-1/CON-2 consent/app-registration singletons, and the SHR-1
-        guest-invite singleton; further Graph (MCA-4) and Exchange Online
-        (MCA-5) controls register here as they land, each an additive
-        one-line entry (ADR-0013).
+        the CON-1/CON-2 consent/app-registration singletons, the SHR-1
+        guest-invite singleton, and the EXO MDO-1 preset control; further
+        Graph (MCA-4) and Exchange Online (MCA-5) controls register here as
+        they land, each an additive one-line entry (ADR-0013).
 
     .OUTPUTS
         pscustomobject[] (each PSTypeName 'M365Configurator.Control').
@@ -35,6 +35,7 @@ function Get-M365ControlRegistry {
         New-M365AppConsentControl
         New-M365AdminConsentWorkflowControl
         New-M365GuestInviteControl
+        New-M365StandardPresetControl
     )
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)

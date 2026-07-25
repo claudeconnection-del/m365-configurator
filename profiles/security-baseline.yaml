@@ -118,3 +118,17 @@ controls:
     frameworkVersion: "1.5.0"
     settings:
       allowInvitesFrom: adminsAndGuestInviters
+
+  # MDO-1 — Standard preset security policy (SCuBA MS.DEFENDER.1.1v1). One
+  # rule toggle applies Microsoft-maintained anti-spam/anti-malware/anti-phish
+  # (EOP) and Safe Links/Safe Attachments (ATP) settings. Requires the preset
+  # to have been turned on once in the Defender portal — this control is not
+  # self-healing (ADR-0011); see New-M365StandardPresetControl.ps1.
+  - id: MDO-1
+    name: Standard preset security policy
+    provider: exo
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      eopRuleState: Enabled
+      atpRuleState: Enabled
