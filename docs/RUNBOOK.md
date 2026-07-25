@@ -257,7 +257,7 @@ Work top to bottom. Tick when the story is **Done in Jira** (landed, reviewed,
 pushed).
 
 - [x] **S1 · MCA-40** — CI workflow (create the Jira story first if missing)
-- [ ] **S2 · MCA-18** — Apply engine
+- [x] **S2 · MCA-18** — Apply engine
 - [ ] **S3 · MCA-23** — ID-2 block legacy auth (CA)
 - [ ] **S4 · MCA-24** — ID-3 require MFA for all users (CA)
 - [ ] **S5 · MCA-25** — AM-2 disable weak MFA methods
