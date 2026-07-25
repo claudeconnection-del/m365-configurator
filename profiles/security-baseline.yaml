@@ -40,3 +40,22 @@ controls:
       includeApplications: [All]
       grantOperator: OR
       grantControls: [block]
+
+  # ID-3 — Require MFA for all users (SCuBA MS.AAD.3.2v2; CA "MFA for all
+  # users" template). Highest-value identity control after blocking legacy
+  # auth. Caution: an unregistered admin can lock themselves out — dry-run
+  # first. excludeUsers: put your break-glass account object-id here.
+  - id: ID-3
+    name: Require MFA for all users
+    provider: graph
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      displayName: Require MFA for all users
+      state: enabled
+      clientAppTypes: [all]
+      includeUsers: [All]
+      excludeUsers: []
+      includeApplications: [All]
+      grantOperator: OR
+      grantControls: [mfa]

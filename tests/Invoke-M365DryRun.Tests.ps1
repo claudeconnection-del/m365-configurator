@@ -72,23 +72,34 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
     BeforeAll {
         $script:profilePath = Join-Path $PSScriptRoot '..' 'profiles' 'security-baseline.yaml'
 
-        # The shipped baseline now carries ID-2 (a CA collection control)
-        # alongside ID-1, so the mock must branch by endpoint like a real
-        # tenant would, rather than returning one fixed shape for every call.
-        # This fixture matches the ID-2 block in profiles/security-baseline.yaml
-        # exactly, so ID-2 always plans NoChange here — these two tests are
-        # about ID-1's action, not ID-2's (ID-2 gets its own coverage in
-        # tests/New-M365LegacyAuthBlockControl.Tests.ps1).
+        # The shipped baseline now carries ID-2 and ID-3 (Conditional Access
+        # collection controls) alongside ID-1, so the mock must branch by
+        # endpoint like a real tenant would, rather than returning one fixed
+        # shape for every call. Both CA fixtures match their respective blocks
+        # in profiles/security-baseline.yaml exactly, so ID-2/ID-3 always plan
+        # NoChange here — these two tests are about ID-1's action, not the CA
+        # controls' (which get their own coverage in
+        # tests/New-M365LegacyAuthBlockControl.Tests.ps1 and
+        # tests/New-M365RequireMfaControl.Tests.ps1).
         $script:caPolicyMatchingProfile = @{
             value = @(
                 @{
-                    id = 'ca-policy-guid'; displayName = 'Block legacy authentication'; state = 'enabled'
+                    id = 'ca-policy-guid-id2'; displayName = 'Block legacy authentication'; state = 'enabled'
                     conditions = @{
                         clientAppTypes = @('exchangeActiveSync', 'other')
                         users          = @{ includeUsers = @('All'); excludeUsers = @() }
                         applications   = @{ includeApplications = @('All') }
                     }
                     grantControls = @{ operator = 'OR'; builtInControls = @('block') }
+                }
+                @{
+                    id = 'ca-policy-guid-id3'; displayName = 'Require MFA for all users'; state = 'enabled'
+                    conditions = @{
+                        clientAppTypes = @('all')
+                        users          = @{ includeUsers = @('All'); excludeUsers = @() }
+                        applications   = @{ includeApplications = @('All') }
+                    }
+                    grantControls = @{ operator = 'OR'; builtInControls = @('mfa') }
                 }
             )
         }
@@ -122,6 +133,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         $plan.Signal | Should -Be 'Pass'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-1' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-2' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'ID-3' }).Action | Should -Be 'NoChange'
     }
 }
 

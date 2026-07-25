@@ -13,10 +13,10 @@ function Get-M365ControlRegistry {
         invariant the engine relies on: control ids are UNIQUE — a duplicate id is a
         packaging fault and fails loud here (NFR-6), never silently shadowing another.
 
-        v1 slice: the Graph ID-1 security-defaults singleton and the ID-2
-        block-legacy-auth Conditional Access collection; further Graph (MCA-4)
-        and Exchange Online (MCA-5) controls register here as they land, each
-        an additive one-line entry (ADR-0013).
+        v1 slice: the Graph ID-1 security-defaults singleton and the ID-2/ID-3
+        Conditional Access collections; further Graph (MCA-4) and Exchange
+        Online (MCA-5) controls register here as they land, each an additive
+        one-line entry (ADR-0013).
 
     .OUTPUTS
         pscustomobject[] (each PSTypeName 'M365Configurator.Control').
@@ -28,6 +28,7 @@ function Get-M365ControlRegistry {
     $controls = @(
         New-M365SecurityDefaultsControl
         New-M365LegacyAuthBlockControl
+        New-M365RequireMfaControl
     )
 
     $seen = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
