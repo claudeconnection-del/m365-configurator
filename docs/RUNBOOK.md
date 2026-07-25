@@ -332,12 +332,20 @@ jobs:
           chmod +x "$HOME/pwsh/pwsh"
           "$HOME/pwsh/pwsh" -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
       - name: Install pinned runtime modules
-        run: "$HOME/pwsh/pwsh" -NoProfile -File scripts/install-modules.ps1
+        run: $HOME/pwsh/pwsh -NoProfile -File scripts/install-modules.ps1
       - name: Install pinned dev tools (Pester 6.0.1)
-        run: "$HOME/pwsh/pwsh" -NoProfile -File scripts/install-dev-tools.ps1
+        run: $HOME/pwsh/pwsh -NoProfile -File scripts/install-dev-tools.ps1
       - name: Run test suite
-        run: "$HOME/pwsh/pwsh" -NoProfile -Command "Invoke-Pester -Path tests/ -CI"
+        run: $HOME/pwsh/pwsh -NoProfile -Command "Invoke-Pester -Path tests/ -CI"
 ```
+
+**Correction (found while executing S1):** the `run:` lines above must NOT
+wrap `$HOME/pwsh/pwsh` in double quotes — a quoted scalar followed by more
+unquoted text on the same line is invalid YAML ("did not find expected key"),
+and GitHub fails the run immediately (0s) before any step executes. Validate
+any future workflow edits with
+`pwsh -NoProfile -Command "Get-Content <file> -Raw | ConvertFrom-Yaml"`
+before pushing.
 
   (Manifest validity is covered inside the suite by
   `tests/M365Configurator.Manifest.Tests.ps1`, so no separate

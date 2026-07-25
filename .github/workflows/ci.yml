@@ -22,8 +22,8 @@ jobs:
           chmod +x "$HOME/pwsh/pwsh"
           "$HOME/pwsh/pwsh" -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
       - name: Install pinned runtime modules
-        run: "$HOME/pwsh/pwsh" -NoProfile -File scripts/install-modules.ps1
+        run: $HOME/pwsh/pwsh -NoProfile -File scripts/install-modules.ps1
       - name: Install pinned dev tools (Pester 6.0.1)
-        run: "$HOME/pwsh/pwsh" -NoProfile -File scripts/install-dev-tools.ps1
+        run: $HOME/pwsh/pwsh -NoProfile -File scripts/install-dev-tools.ps1
       - name: Run test suite
-        run: "$HOME/pwsh/pwsh" -NoProfile -Command "Invoke-Pester -Path tests/ -CI"
+        run: $HOME/pwsh/pwsh -NoProfile -Command "Invoke-Pester -Path tests/ -CI"
