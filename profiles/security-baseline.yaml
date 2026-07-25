@@ -21,3 +21,22 @@ controls:
     frameworkVersion: "1.0"
     settings:
       isEnabled: false
+
+  # ID-2 — Block legacy authentication (SCuBA MS.AAD.1.1v1). Legacy protocols
+  # cannot do MFA; blocking them is the single highest-value CA policy.
+  # state is enforced ("enabled") — the dry-run preview is the safety net.
+  # excludeUsers: put your break-glass account object-id here (empty = none).
+  - id: ID-2
+    name: Block legacy authentication
+    provider: graph
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      displayName: Block legacy authentication
+      state: enabled
+      clientAppTypes: [exchangeActiveSync, other]
+      includeUsers: [All]
+      excludeUsers: []
+      includeApplications: [All]
+      grantOperator: OR
+      grantControls: [block]

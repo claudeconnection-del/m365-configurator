@@ -71,10 +71,35 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
 
     BeforeAll {
         $script:profilePath = Join-Path $PSScriptRoot '..' 'profiles' 'security-baseline.yaml'
+
+        # The shipped baseline now carries ID-2 (a CA collection control)
+        # alongside ID-1, so the mock must branch by endpoint like a real
+        # tenant would, rather than returning one fixed shape for every call.
+        # This fixture matches the ID-2 block in profiles/security-baseline.yaml
+        # exactly, so ID-2 always plans NoChange here — these two tests are
+        # about ID-1's action, not ID-2's (ID-2 gets its own coverage in
+        # tests/New-M365LegacyAuthBlockControl.Tests.ps1).
+        $script:caPolicyMatchingProfile = @{
+            value = @(
+                @{
+                    id = 'ca-policy-guid'; displayName = 'Block legacy authentication'; state = 'enabled'
+                    conditions = @{
+                        clientAppTypes = @('exchangeActiveSync', 'other')
+                        users          = @{ includeUsers = @('All'); excludeUsers = @() }
+                        applications   = @{ includeApplications = @('All') }
+                    }
+                    grantControls = @{ operator = 'OR'; builtInControls = @('block') }
+                }
+            )
+        }
     }
 
     It 'plans ID-1 as Update when the tenant currently has security defaults ON' {
-        Mock Invoke-M365GraphRequest -ModuleName M365Configurator { @{ isEnabled = $true } }
+        Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
+            param($Method, $Uri, $Body)
+            if ($Uri -match 'identitySecurityDefaultsEnforcementPolicy') { return @{ isEnabled = $true } }
+            if ($Uri -match 'identity/conditionalAccess/policies') { return $script:caPolicyMatchingProfile }
+        }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
         $id1  = $plan.Items | Where-Object { $_.Id -eq 'ID-1' }
@@ -86,12 +111,17 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
     }
 
     It 'plans ID-1 as NoChange (Pass) when the tenant already has security defaults OFF' {
-        Mock Invoke-M365GraphRequest -ModuleName M365Configurator { @{ isEnabled = $false } }
+        Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
+            param($Method, $Uri, $Body)
+            if ($Uri -match 'identitySecurityDefaultsEnforcementPolicy') { return @{ isEnabled = $false } }
+            if ($Uri -match 'identity/conditionalAccess/policies') { return $script:caPolicyMatchingProfile }
+        }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
 
         $plan.Signal | Should -Be 'Pass'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-1' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'ID-2' }).Action | Should -Be 'NoChange'
     }
 }
 
