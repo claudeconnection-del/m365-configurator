@@ -65,6 +65,34 @@ Describe 'Invoke-M365DryRun' {
 
         $script:setCalled | Should -BeFalse
     }
+
+    It 'threads -NameOverride to both the desired settings and the session (MCA-16)' {
+        # A fake handler standing in for a real name-scoped control (ID-2): its
+        # Get seam has no access to Desired (ADR-0013), so it reads the
+        # effective name off $Session.NameOverride the same way the real
+        # ID-2/ID-3/MDO-4 controls do. Defined inside InModuleScope so the
+        # Get seam (which calls the private Get-M365MapValue, like the real
+        # controls do) resolves it from its definition scope.
+        InModuleScope M365Configurator {
+            $registry = @(
+                New-M365Control -Id 'ID-2' -Provider 'graph' -Shape 'collection' -Title 'Fake ID-2' `
+                    -Get {
+                        param($Session)
+                        @{ displayName = (Get-M365MapValue (Get-M365MapValue $Session 'NameOverride') 'ID-2') }
+                    } `
+                    -Set { param($Session, $Desired, $Current) }
+            )
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @( [ordered]@{ id = 'ID-2'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ displayName = 'Block legacy authentication' } } )
+            }
+
+            $plan = Invoke-M365DryRun -Profile $profile -Registry $registry -NameOverride @{ 'ID-2' = 'Contoso - Block legacy auth' } -InformationAction Ignore
+
+            $plan.Items[0].Desired['displayName'] | Should -Be 'Contoso - Block legacy auth'
+            $plan.Items[0].Action                 | Should -Be 'NoChange'   # Get's session-threaded name matches the rewritten desired name
+        }
+    }
 }
 
 Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph mocked)' {

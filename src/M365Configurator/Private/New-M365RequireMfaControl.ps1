@@ -51,8 +51,10 @@ function New-M365RequireMfaControl {
             param($Session)
             # Endpoint and well-known name are inlined (not closed over): the
             # engine invokes this seam in its own scope, where an enclosing
-            # local would not be in scope.
-            $name = 'Require MFA for all users'
+            # local would not be in scope. A per-client rename (MCA-16) rides
+            # in on the session, since the ADR-0013 Get seam has no access to
+            # the profile's desired settings.
+            $name = (Get-M365MapValue (Get-M365MapValue $Session 'NameOverride') 'ID-3') ?? 'Require MFA for all users'
             $all = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/identity/conditionalAccess/policies'
             $match = @(Get-M365MapValue $all 'value') |
                 Where-Object { (Get-M365MapValue $_ 'displayName') -eq $name } |

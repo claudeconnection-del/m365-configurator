@@ -73,6 +73,17 @@ Describe 'ID-3 require-MFA control (wired via the registry)' {
         $current | Should -BeNullOrEmpty
     }
 
+    It 'Get matches by the overridden name from $Session.NameOverride when present (MCA-16)' {
+        Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
+            @{ value = @(@{ id = 'renamed-guid'; displayName = 'Contoso - Require MFA'; conditions = @{}; grantControls = @{} }) }
+        }
+
+        $session = @{ NameOverride = @{ 'ID-3' = 'Contoso - Require MFA' } }
+        $current = & $script:id3.Get $session
+
+        $current['displayName'] | Should -Be 'Contoso - Require MFA'
+    }
+
     It 'Get projects a matching policy to exactly the nine keys, arrays sorted, metadata stripped' {
         Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
             @{ value = @($script:rawPolicyFixture) }

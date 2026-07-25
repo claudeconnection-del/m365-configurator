@@ -31,6 +31,11 @@ function New-M365LegacyAuthBlockControl {
         which has no "absent" concept for a collection control. Otherwise it
         delegates to the canonical field-by-field diff (Get-M365ControlChange).
 
+        Per-client renames (MCA-16): `Get` reads its effective name from
+        `$Session.NameOverride['ID-2']` when present, falling back to the
+        well-known name — the three owner-facing entry points thread it there
+        after Set-M365ProfileNameOverride rewrites the profile's displayName.
+
         DependsOn 'ID-1': security defaults must be off before Conditional
         Access enforces (they are mutually exclusive) — this control has no
         dependency of its own, so the ordering constraint lives on ID-2/ID-3.
@@ -57,8 +62,10 @@ function New-M365LegacyAuthBlockControl {
             param($Session)
             # Endpoint and well-known name are inlined (not closed over): the
             # engine invokes this seam in its own scope, where an enclosing
-            # local would not be in scope.
-            $name = 'Block legacy authentication'
+            # local would not be in scope. A per-client rename (MCA-16) rides
+            # in on the session, since the ADR-0013 Get seam has no access to
+            # the profile's desired settings.
+            $name = (Get-M365MapValue (Get-M365MapValue $Session 'NameOverride') 'ID-2') ?? 'Block legacy authentication'
             $all = Invoke-M365GraphRequest -Method GET -Uri 'v1.0/identity/conditionalAccess/policies'
             $match = @(Get-M365MapValue $all 'value') |
                 Where-Object { (Get-M365MapValue $_ 'displayName') -eq $name } |

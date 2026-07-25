@@ -51,6 +51,24 @@ Describe 'MDO-4 block-external-auto-forwarding control (wired via the registry)'
         $current['autoForwardingMode'] | Should -Be 'Automatic'
     }
 
+    It 'Get matches by the overridden name from $Session.NameOverride when present (MCA-16)' {
+        Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
+            param($Name, $Parameters)
+            if ($Name -eq 'Get-HostedOutboundSpamFilterPolicy') {
+                return @(
+                    [pscustomobject]@{ Name = 'Default'; AutoForwardingMode = 'Off' }
+                    [pscustomobject]@{ Name = 'Contoso Outbound Spam'; AutoForwardingMode = 'On' }
+                )
+            }
+        }
+
+        $session = @{ NameOverride = @{ 'MDO-4' = 'Contoso Outbound Spam' } }
+        $current = & $script:mdo4.Get $session
+
+        $current['name']               | Should -Be 'Contoso Outbound Spam'
+        $current['autoForwardingMode'] | Should -Be 'On'
+    }
+
     It 'Get throws when the Default policy is absent (broken EXO session)' {
         Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
             param($Name, $Parameters)

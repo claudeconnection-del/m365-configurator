@@ -73,6 +73,17 @@ Describe 'ID-2 block-legacy-auth control (wired via the registry)' {
         $current | Should -BeNullOrEmpty
     }
 
+    It 'Get matches by the overridden name from $Session.NameOverride when present (MCA-16)' {
+        Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
+            @{ value = @(@{ id = 'renamed-guid'; displayName = 'Contoso - Block legacy auth'; conditions = @{}; grantControls = @{} }) }
+        }
+
+        $session = @{ NameOverride = @{ 'ID-2' = 'Contoso - Block legacy auth' } }
+        $current = & $script:id2.Get $session
+
+        $current['displayName'] | Should -Be 'Contoso - Block legacy auth'
+    }
+
     It 'Get projects a matching policy to exactly the nine keys, arrays sorted, metadata stripped' {
         Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
             @{ value = @($script:rawPolicyFixture) }

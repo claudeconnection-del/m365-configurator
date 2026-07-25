@@ -50,7 +50,13 @@ function Get-M365Drift {
         $Registry,
 
         # Seam: loads + validates a profile from a path. Default is the real importer.
-        [scriptblock] $Importer = { param([string] $Path) Import-M365Profile -Path $Path }
+        [scriptblock] $Importer = { param([string] $Path) Import-M365Profile -Path $Path },
+
+        # Per-client renames of name-scoped controls (MCA-16; FR-7, D9): control id
+        # -> replacement name. Rewrites the profile's name-bearing setting AND
+        # threads the effective name through a shallow session copy, so a
+        # name-scoped control's Get seam still finds the (renamed) tenant object.
+        [hashtable] $NameOverride
     )
 
     $profileObject =
@@ -61,6 +67,19 @@ function Get-M365Drift {
         else {
             $InputObject
         }
+
+    if ($NameOverride -and $NameOverride.Count -gt 0) {
+        $renamed = Set-M365ProfileNameOverride -InputObject $profileObject -NameOverride $NameOverride
+        $profileObject = $renamed.Profile
+
+        $Session = if ($null -eq $Session) { @{} } elseif ($Session -is [System.Collections.IDictionary]) { $Session.Clone() } else { $Session.PSObject.Copy() }
+        if ($Session -is [System.Collections.IDictionary]) {
+            $Session['NameOverride'] = $renamed.NameOverride
+        }
+        else {
+            Add-Member -InputObject $Session -NotePropertyName 'NameOverride' -NotePropertyValue $renamed.NameOverride -Force
+        }
+    }
 
     Write-Verbose 'Drift: computing plan (read-only; no changes are applied).'
     $plan = Get-M365Plan -Profile $profileObject -Session $Session -Registry $Registry

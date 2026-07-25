@@ -52,16 +52,19 @@ function New-M365AutoForwardBlockControl {
         -RequiredCapabilities @('exo') `
         -Get {
             param($Session)
+            # A per-client rename (MCA-16) rides in on the session, since the
+            # ADR-0013 Get seam has no access to the profile's desired settings.
+            $name = (Get-M365MapValue (Get-M365MapValue $Session 'NameOverride') 'MDO-4') ?? 'Default'
             $policies = @(Invoke-M365ExoCommand -Name 'Get-HostedOutboundSpamFilterPolicy')
-            $default  = $policies | Where-Object { (Get-M365MapValue $_ 'Name') -eq 'Default' } | Select-Object -First 1
+            $match    = $policies | Where-Object { (Get-M365MapValue $_ 'Name') -eq $name } | Select-Object -First 1
 
-            if (-not $default) {
-                throw "outbound spam filter policy 'Default' not found — every tenant ships one; this indicates a broken EXO session."
+            if (-not $match) {
+                throw "outbound spam filter policy '$name' not found — every tenant ships 'Default', so this indicates a broken EXO session (or a -NameOverride pointing at a policy that does not exist)."
             }
 
             @{
-                name               = [string] (Get-M365MapValue $default 'Name')
-                autoForwardingMode = [string] (Get-M365MapValue $default 'AutoForwardingMode')
+                name               = [string] (Get-M365MapValue $match 'Name')
+                autoForwardingMode = [string] (Get-M365MapValue $match 'AutoForwardingMode')
             }
         } `
         -Set {
