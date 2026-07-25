@@ -115,14 +115,40 @@ Describe 'Test-M365Profile' {
         }
     }
 
+    It 'catches credential material hidden behind a value/encoding suffix (regression: secretText etc.)' {
+        # These slipped past a head-word-only rule: the credential noun is not the
+        # LAST word, but the trailing word names the secret's stored form. secretText
+        # is the real Microsoft Graph property that carries an app secret in cleartext.
+        foreach ($key in 'secretText', 'secretValue', 'clientSecretValue', 'tokenString', 'apiKeyData', 'password_hash', 'secret_data', 'accessKeyId') {
+            $leaky = [ordered]@{
+                schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
+                controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = 'graph'; settings = [ordered]@{ $key = 'v' } } )
+            }
+            (Test-M365Profile -Profile $leaky).Valid | Should -BeFalse -Because "$key carries credential material"
+        }
+    }
+
+    It 'catches certificate and key-family credential fields (regression)' {
+        foreach ($key in 'certificate', 'clientCertificate', 'pemCertificate', 'symmetricKey', 'sshKey', 'privateKeyPem') {
+            $leaky = [ordered]@{
+                schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
+                controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = 'graph'; settings = [ordered]@{ $key = 'v' } } )
+            }
+            (Test-M365Profile -Profile $leaky).Valid | Should -BeFalse -Because "$key names credential material"
+        }
+    }
+
     It 'allows legitimate policy settings that merely mention a credential word (no false positives)' {
-        # Real SCuBA/AAD token-lifetime + policy settings — value is not a secret.
-        foreach ($key in 'accessTokenLifetime', 'refreshTokenLifetime', 'idTokenLifetime', 'requireSecretRotation', 'apiKeyEnforced', 'connectionStringRequired') {
+        # Real SCuBA/AAD/Graph settings whose name mentions a credential word but whose
+        # value is a duration, boolean, identifier, URL, or policy object — never a secret.
+        foreach ($key in 'accessTokenLifetime', 'refreshTokenLifetime', 'idTokenLifetime', 'requireSecretRotation',
+            'apiKeyEnforced', 'connectionStringRequired', 'clientId', 'tenantId', 'objectId', 'applicationId',
+            'displayName', 'tokenEndpoint', 'certificateBasedAuthConfiguration', 'passwordPolicy', 'tokenLifetimePolicy') {
             $ok = [ordered]@{
                 schemaVersion = '1.0'; name = 'x'; framework = 'SCuBA'; frameworkVersion = '1.5.0'
                 controls = @( [ordered]@{ id = 'MS.AAD.1.1'; framework = 'SCuBA'; frameworkVersion = '1.5.0'; provider = 'graph'; settings = [ordered]@{ $key = 'PT1H' } } )
             }
-            (Test-M365Profile -Profile $ok).Valid | Should -BeTrue -Because "$key is a policy setting, not a credential"
+            (Test-M365Profile -Profile $ok).Valid | Should -BeTrue -Because "$key is a policy/config setting, not a credential"
         }
     }
 
