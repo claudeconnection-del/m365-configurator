@@ -51,7 +51,9 @@ full, testable list.
    a missing module) the app offers a consented fix rather than a dead-end
    ([ADR-0011](docs/decisions/0011-self-healing-remediation-for-recoverable-preconditions.md)).
 6. **Stability by construction.** As long as the underlying PowerShell module
-   syntax is stable, this tool is stable. Version-pinning is a first-class concern.
+   syntax is stable, this tool is stable. Version-pinning is a first-class concern —
+   both the M365 modules and the **runtime** itself
+   ([ADR-0015](docs/decisions/0015-runtime-version-pin-powershell-lts.md)).
 7. **Reviewable, deterministic changes.** Dry-run first; diffs and remediations
    are predictable and explainable.
 8. **Readability for the human inspecting it.** Code, profiles, logs, diffs, and
@@ -76,9 +78,9 @@ and [`scripts/install-dev-tools.ps1`](scripts/install-dev-tools.ps1) — so the 
 modules **and** the test runner (Pester) are ready, and you can run
 `Invoke-Pester -Path tests/` as soon as it finishes building.
 
-### Option B — Local PowerShell 7+
+### Option B — Local PowerShell (7.4 LTS or newer)
 
-If you already have [PowerShell 7+](https://learn.microsoft.com/powershell/scripting/install/installing-powershell)
+If you already have a [supported PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell)
 installed:
 
 ```bash
@@ -93,6 +95,28 @@ rights, no system changes) and prints the versions it installed.
 > **Nothing in bootstrap authenticates to any tenant.** It only installs modules
 > from the PowerShell Gallery. Connecting to M365 is an explicit, interactive step
 > that will live in the application itself.
+
+### Supported PowerShell versions
+
+Version-pinning covers the runtime as well as the modules
+([ADR-0015](docs/decisions/0015-runtime-version-pin-powershell-lts.md)). PowerShell's
+support lifecycle follows .NET's:
+
+| | Version | .NET | Supported until |
+| --- | --- | --- | --- |
+| **Floor** (module manifest requires) | 7.4 LTS | .NET 8 | 10-Nov-2026 |
+| **Target** (shipped container + CI) | 7.6 LTS | .NET 10 | 14-Nov-2028 |
+
+Anything from 7.4 up will load. 7.5 works but is a non-LTS line that also expires
+10-Nov-2026, so prefer 7.4 or 7.6. **7.0–7.3 are out of support and are rejected at
+import** rather than failing later somewhere confusing.
+
+The dev container pins the **floor** (7.4) on purpose — code that runs there runs on
+the target too, but not the reverse, so developing against the floor catches
+accidental use of APIs a 7.4 user could not run.
+
+> At the **10-Nov-2026** revisit trigger, 7.4 leaves support and the floor rises to
+> 7.6. That is a deliberate amendment to ADR-0015, not a silent drift.
 
 ## Running the tests
 

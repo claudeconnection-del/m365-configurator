@@ -49,7 +49,10 @@ and Jira issues (project `MCA`) can reference it. Status legend: `[ ]` not start
   messages; no silent catches; no partial application without a clear error state.
 - [ ] **NFR-7 — Syntax-stability.** The tool remains correct as long as the
   underlying PowerShell module cmdlet syntax is unchanged. Module versions are
-  pinned; upgrades are deliberate.
+  pinned; upgrades are deliberate. The **runtime** is pinned too — a supported
+  floor in the module manifest, and an exact PowerShell/.NET pair for the container
+  and CI — so the .NET type surface the code relies on cannot drift underneath it
+  (ADR-0015).
 - [ ] **NFR-8 — Reproducible dev/build.** A fresh clone reaches a working dev
   environment via the documented bootstrap with no hidden steps.
 - [ ] **NFR-9 — Readability & visual inspection.** All human-facing output — code,
@@ -91,13 +94,14 @@ vertical slice from [research 05 §4](research/05-security-baselines.md).
 | NFR-1 | ADR-0001 | MCA-10, MCA-12 (validated by MCA-9) |
 | NFR-2 | —¹ | MCA-7 |
 | NFR-3 | —¹ | MCA-2, MCA-9 |
-| NFR-4 | ADR-0007 | MCA-9 |
+| NFR-4 | ADR-0007, ADR-0015 | MCA-9, MCA-39 |
 | NFR-5 | ADR-0013 | MCA-35 |
 | NFR-6 | ADR-0011, ADR-0013 | MCA-18, MCA-21 |
-| NFR-7 | —¹ | MCA-2, MCA-13 |
-| NFR-8 | —¹ | MCA-2, MCA-9 |
+| NFR-7 | ADR-0015 | MCA-2, MCA-13, MCA-39 |
+| NFR-8 | ADR-0015 | MCA-2, MCA-9, MCA-39 |
 | NFR-9 | ADR-0006, ADR-0013 | MCA-13, MCA-17, MCA-36 |
 
 ¹ Anchored by a design tenet + pinned tooling rather than a dedicated ADR
-(no-egress, minimal-deps, version-pinning, reproducible-dev). An ADR is written
-only if one of these becomes a contested, hard-to-reverse decision.
+(no-egress, minimal-deps). An ADR is written only if one of these becomes a
+contested, hard-to-reverse decision — as version-pinning and reproducible-dev did,
+now recorded in ADR-0015 (runtime version pin).

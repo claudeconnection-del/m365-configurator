@@ -31,3 +31,4 @@ reasoning survives and anyone picking up the work understands *why*, not just
 | [0012](0012-cli-first-interface-gui-deferred.md) | CLI-first interface; GUI deferred until proven in the CLI | Accepted (amends 0006) |
 | [0013](0013-control-provider-contract.md) | Control-provider contract: Get / Compare / Set control handlers | Accepted |
 | [0014](0014-graph-access-via-invoke-mggraphrequest.md) | Graph access via `Invoke-MgGraphRequest` (raw REST), not typed sub-module cmdlets | Accepted |
+| [0015](0015-runtime-version-pin-powershell-lts.md) | Runtime version pin: floor PowerShell 7.4 LTS, target 7.6 LTS / .NET 10 | Accepted |

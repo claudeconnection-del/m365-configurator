@@ -71,11 +71,39 @@ the tag if the planned M365DSC export-tooling reuse ever wants its probes.
 Never push to a branch other than your designated one without explicit
 permission. Reference Jira issues in commits where applicable (e.g. `MCA-12: …`).
 
+## Working alongside other agents/seats
+
+More than one agent may be working this project concurrently, and **all work lands
+on `main`** — so an unclaimed overlap becomes a merge conflict or a silent
+overwrite. Every agent authenticates to Jira/Confluence as *Moose*, so the account
+name does **not** identify you.
+
+Before starting a story:
+
+1. **Read the coordination block** — the "⚠️ Parallel work — seat coordination"
+   section on Confluence page `1048577`. It lists each active lane, who holds it,
+   and the files it touches.
+2. **Claim your story in Jira** — transition it to *In Progress* and comment naming
+   your seat/agent and the files you will touch.
+3. **Check the collision hot spots** before editing them. The known ones:
+   - `src/M365Configurator/Public/Get-M365ControlRegistry.ps1` — **every** new
+     control registers here, so two agents adding controls in parallel always
+     conflict in this one file. Land control stories one at a time.
+   - `src/M365Configurator/M365Configurator.psd1` — `FunctionsToExport` grows with
+     every new public function.
+   - `src/M365Configurator/Public/Get-M365Plan.ps1` — shared by the dry-run and
+     apply engines.
+   - `docs/decisions/README.md` — the ADR index; every new ADR appends a row.
+
+Update the coordination block when you take or finish a lane. Per
+[CONTRIBUTING.md](CONTRIBUTING.md), **an agent never reviews its own code** — hand
+review to a different agent.
+
 ## Roadmap phase (where we are)
 
 `Phase 0 bootstrap ✅ → Phase 1 research ✅ → Phase 2 design checkpoint ✅ (decisions
-ratified as ADRs 0001–0011) → Phase 3 Jira planning ✅ (MCA backlog:
-8 workstream epics + 28 stories; v1 slice fully decomposed, 2026-07-22) →
+ratified as ADRs 0001–0015) → Phase 3 Jira planning ✅ (MCA backlog:
+8 workstream epics + 29 stories; v1 slice fully decomposed, 2026-07-22) →
 **Phase 4 build** → Phase 5 harden & ship.`
 
 Full plan in [`docs/ROADMAP.md`](docs/ROADMAP.md); open decisions in
