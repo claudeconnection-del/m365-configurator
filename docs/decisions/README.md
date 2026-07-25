@@ -30,3 +30,4 @@ reasoning survives and anyone picking up the work understands *why*, not just
 | [0011](0011-self-healing-remediation-for-recoverable-preconditions.md) | Self-healing: offer remediation for recoverable preconditions | Accepted |
 | [0012](0012-cli-first-interface-gui-deferred.md) | CLI-first interface; GUI deferred until proven in the CLI | Accepted (amends 0006) |
 | [0013](0013-control-provider-contract.md) | Control-provider contract: Get / Compare / Set control handlers | Accepted |
+| [0014](0014-graph-access-via-invoke-mggraphrequest.md) | Graph access via `Invoke-MgGraphRequest` (raw REST), not typed sub-module cmdlets | Accepted |
