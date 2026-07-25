@@ -271,7 +271,7 @@ pushed).
 - [x] **S13 · MCA-33** — AUD-1 unified audit log
 - [x] **S14 · MCA-34** — AUD-2 mailbox auditing (org default)
 - [x] **S15 · MCA-19** — Drift detection
-- [ ] **S16 · MCA-20** — Deterministic remediation
+- [x] **S16 · MCA-20** — Deterministic remediation
 - [ ] **S17 · MCA-16** — Name remapping
 - [ ] **S18 · MCA-35** — Structured audit log
 - [ ] **S19 · MCA-36** — CLI dispatcher
