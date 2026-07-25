@@ -61,6 +61,15 @@ Every story implicitly includes these. Reviewers reject violations.
   [review protocol](#the-work-loop-protocol).
 - Reference Jira issues in commits: `MCA-NN: subject`.
 
+**Tenant prerequisites** (document these; don't rediscover them): consolidated
+delegated Graph scopes for the v1 slice are `Policy.Read.All` +
+`Policy.ReadWrite.ConditionalAccess`, `Policy.ReadWrite.AuthenticationMethod`,
+`Policy.ReadWrite.Authorization`, `Policy.ReadWrite.ConsentRequest`,
+`SecurityEvents.Read.All`. The **privilege floor across the slice is
+Privileged Role Administrator** (required for writing the authorization
+policy — S6/S8); Security Administrator or Conditional Access Administrator
+covers the CA controls alone. GCC/national-cloud variants are out of v1.
+
 ## The work loop (protocol)
 
 For **each** story, in queue order:
@@ -135,8 +144,8 @@ Facts you will otherwise rediscover slowly:
 - Connect state objects (from `Connect-M365Graph` / `Connect-M365ExchangeOnline`)
   are secret-free projections; neither carries `Capabilities` yet — MCA-21
   introduces the session object (D8).
-- The Pester suite stands at **153 green** as of the MCA-29 merge. Every
-  story adds tests and never breaks existing ones.
+- The Pester suite stands at **154 green** as of the MCA-29 follow-ups
+  (2026-07-25). Every story adds tests and never breaks existing ones.
 
 ## Pre-made decisions
 
@@ -449,21 +458,29 @@ blocking legacy auth (SCuBA MS.AAD.1.1v1).
   (the legacy-auth pair is `exchangeActiveSync` + `other`, per Microsoft's own
   block-legacy-auth guidance);
   `grantControls.operator` (`OR`/`AND`) + `grantControls.builtInControls`
-  (needs `block` here). Write scope: `Policy.ReadWrite.ConditionalAccess`.
+  (needs `block` here). Write scope: `Policy.ReadWrite.ConditionalAccess`
+  (+ `Policy.Read.All`). Known Graph issue (documented at
+  graph/known-issues#conditional-access-policy-requires-consent-to-additional-permission):
+  CA writes can demand consent beyond the documented pair — a 403 here may be
+  a consent gap, not a tool bug; the error message should say so.
 
 **Projection vocabulary** (flat where possible, D2/D4; arrays sorted):
 
 ```
 displayName, state, clientAppTypes (sorted), includeUsers (sorted),
-includeApplications (sorted), grantOperator, grantControls (sorted), id (stash)
+excludeUsers (sorted), includeApplications (sorted), grantOperator,
+grantControls (sorted), id (stash)
 ```
+
+(`excludeUsers` exists so a profile can exempt a break-glass account — the
+standard guard against locking every admin out with a block/MFA policy.)
 
 **Implementation:**
 
 `Get-M365CaPolicyProjection` (private, shared): `param($Policy)` → hashtable
-with the seven flat keys + `id` (id from `$Policy.id`; nested reads via
-`Get-M365MapValue`; each array `@(... | Sort-Object)`; absent nested parts →
-`$null`/`@()`).
+with the eight flat keys + `id` (id from `$Policy.id`; nested reads via
+`Get-M365MapValue` — `excludeUsers` from `conditions.users.excludeUsers`;
+each array `@(... | Sort-Object)`; absent nested parts → `$null`/`@()`).
 
 `New-M365LegacyAuthBlockControl` (mirror the security-defaults file style):
 
@@ -508,7 +525,10 @@ New-M365Control -Id 'ID-2' -Provider 'graph' -Shape 'collection' `
             state       = [string](Get-M365MapValue $Desired 'state')
             conditions  = @{
                 clientAppTypes = @(Get-M365MapValue $Desired 'clientAppTypes' | Sort-Object)
-                users          = @{ includeUsers        = @(Get-M365MapValue $Desired 'includeUsers' | Sort-Object) }
+                users          = @{
+                    includeUsers = @(Get-M365MapValue $Desired 'includeUsers' | Sort-Object)
+                    excludeUsers = @(Get-M365MapValue $Desired 'excludeUsers' | Sort-Object)
+                }
                 applications   = @{ includeApplications = @(Get-M365MapValue $Desired 'includeApplications' | Sort-Object) }
             }
             grantControls = @{
@@ -542,6 +562,7 @@ handler when it lands (see S17). Do not solve it here.
   # ID-2 — Block legacy authentication (SCuBA MS.AAD.1.1v1). Legacy protocols
   # cannot do MFA; blocking them is the single highest-value CA policy.
   # state is enforced ("enabled") — the dry-run preview is the safety net.
+  # excludeUsers: put your break-glass account object-id here (empty = none).
   - id: ID-2
     name: Block legacy authentication
     provider: graph
@@ -552,6 +573,7 @@ handler when it lands (see S17). Do not solve it here.
       state: enabled
       clientAppTypes: [exchangeActiveSync, other]
       includeUsers: [All]
+      excludeUsers: []
       includeApplications: [All]
       grantOperator: OR
       grantControls: [block]
@@ -562,7 +584,7 @@ the registry like `tests/Get-M365ControlRegistry.Tests.ps1`):
 - [ ] registered: id ID-2, provider graph, shape collection, DependsOn ID-1
 - [ ] `Get` GETs the CA policies collection once and returns `$null` when no
   policy matches the well-known name
-- [ ] `Get` projects a matching policy to exactly the eight keys (seven flat
+- [ ] `Get` projects a matching policy to exactly the nine keys (eight flat
   + id), arrays sorted, via a fixture policy with unsorted arrays + extra
   fields (createdDateTime etc. must NOT appear)
 - [ ] `Compare` with `$null` current → Action Create, one Change per desired
@@ -616,11 +638,15 @@ MS.AAD.3.5v2). Graph singleton per D3.
 - Modify `Public/Get-M365ControlRegistry.ps1`, `profiles/security-baseline.yaml`
 - Test `tests/New-M365WeakMfaMethodsControl.Tests.ps1`
 
-**Mechanism (✅ verified, Graph v1.0):** read
+**Mechanism (✅ verified 2026-07-25, Graph v1.0):** read
 `GET v1.0/policies/authenticationMethodsPolicy` → `authenticationMethodConfigurations[]`
 each `{ id, state }` with ids `Sms`, `Voice`, `Email` (among others). Write:
-`PATCH v1.0/policies/authenticationMethodsPolicy/authenticationMethodConfigurations/{id}`
-with body `@{ '@odata.type' = <type>; state = 'disabled' }` where type is
+`PATCH v1.0/policies/authenticationMethodsPolicy/authenticationMethodConfigurations/{segment}`
+where the documented URL segment is **lowercase** — `/sms`, `/voice`,
+`/email` — while the GET/body `id` is PascalCase (`Sms`): use fixed lowercase
+URL constants, never interpolate the id read back. Body
+`@{ '@odata.type' = <type>; state = 'disabled' }` (the `@odata.type` is
+mandatory) where type is
 `#microsoft.graph.smsAuthenticationMethodConfiguration` /
 `#microsoft.graph.voiceAuthenticationMethodConfiguration` /
 `#microsoft.graph.emailAuthenticationMethodConfiguration`. `state` ∈
@@ -628,14 +654,17 @@ with body `@{ '@odata.type' = <type>; state = 'disabled' }` where type is
 
 **Implementation:** constructor `-Id 'AM-2' -Provider 'graph' -Shape
 'singleton' -Title 'Disable weak MFA methods (SMS / Voice / Email OTP)'`, no
-DependsOn. `Get`: one GET, walk `authenticationMethodConfigurations`, project
+DependsOn. `Get`: one GET, walk `authenticationMethodConfigurations` matching
+ids `Sms`/`Voice`/`Email`, project
 `@{ sms = <state>; voice = <state>; email = <state> }` (lowercase keys; a
 missing method config → `'enabled'`? **No** — absent means the tenant doesn't
 surface it; project only what exists and default absent to `$null`; the
 default diff then reports `$null -> disabled`, which is honest). No custom
-Compare. `Set`: method map `@{ sms = @('Sms', '#microsoft.graph.smsAuthenticationMethodConfiguration'); ... }`;
-for each desired key whose value differs from `$Current` (use
-`Get-M365MapValue`), PATCH that method; return
+Compare. `Set`: method map keyed by vocabulary →
+`@{ sms = @('sms', '#microsoft.graph.smsAuthenticationMethodConfiguration'); ... }`
+(first element = the **lowercase URL segment**); for each desired key whose
+value differs from `$Current` (use `Get-M365MapValue`), PATCH that method's
+lowercase URL; return
 `@{ Id = 'AM-2'; Outcome = 'Applied'; Patched = @(<method ids>) }`.
 
 **Profile block:** settings `{ sms: disabled, voice: disabled, email: disabled }`,
@@ -646,8 +675,9 @@ framework CISA-SCuBA, comment citing MS.AAD.3.5v2.
 - [ ] `Get` GETs the policy once; projects exactly sms/voice/email states from
   a fixture carrying extra methods (Fido2 etc. must not appear)
 - [ ] `Get` projects `$null` for a method id absent from the fixture
-- [ ] `Set` with all three differing → three PATCHes, each to the right URI
-  with the right `@odata.type` and `state = 'disabled'`
+- [ ] `Set` with all three differing → three PATCHes, each to the right
+  **lowercase** URI segment with the right `@odata.type` and
+  `state = 'disabled'`
 - [ ] `Set` with only `sms` differing → exactly one PATCH (Voice/Email
   untouched)
 - [ ] default engine diff: desired all-disabled vs current sms enabled →
@@ -677,31 +707,49 @@ default = `...microsoft-user-default-legacy`). ⚠️ beta calls this
 `permissionGrantPolicyIdsAssignedToDefaultUserRole` at top level — do NOT use
 the beta shape. Scope `Policy.ReadWrite.Authorization`.
 
+**⚠️ Read-modify-write is MANDATORY here.** `permissionGrantPoliciesAssigned`
+also carries `managePermissionGrantsForOwnedResource.*` entries (e.g.
+`...DeveloperConsent`) that the docs explicitly say must be preserved — a
+literal desired-state payload would silently strip developer-consent
+capability. So the control's vocabulary covers ONLY the user-consent half:
+
 **Implementation:** `-Id 'CON-1' -Provider 'graph' -Shape 'singleton' -Title
 'Restrict user app consent and app registration'`. Flat projection (D4):
-`Get` → `@{ allowedToCreateApps = [bool]; permissionGrantPoliciesAssigned =
-@(sorted string[]) }` (both read from the response's
-`defaultUserRolePermissions` via `Get-M365MapValue` twice). `Set` PATCHes
-`v1.0/policies/authorizationPolicy` with a body that nests the declared keys
-back under one `defaultUserRolePermissions` map — include **only** the parts
-the desired map declares (build the inner map conditionally with
-`Test-M365MapHasKey`).
+`Get` → `@{ allowedToCreateApps = [bool]; userConsentPolicies =
+@(sorted string[]) }` where `userConsentPolicies` is
+`permissionGrantPoliciesAssigned` **filtered to entries starting with**
+`managePermissionGrantsForSelf.` (both read from the response's
+`defaultUserRolePermissions` via `Get-M365MapValue`). `Set` must **re-GET the
+live policy first** (the projection deliberately lost the foreign entries),
+then PATCH `v1.0/policies/authorizationPolicy` with
+`defaultUserRolePermissions` built from the declared keys only
+(`Test-M365MapHasKey`): `allowedToCreateApps` verbatim;
+`permissionGrantPoliciesAssigned` = (live entries NOT starting with
+`managePermissionGrantsForSelf.`) + desired `userConsentPolicies`.
+(Do NOT copy the Entra "configure user consent" article's PowerShell tab — it
+has two documented bugs: a nonexistent beta-style property name and a doubled
+prefix. The Graph REST reference is the authority.)
 
 **Profile block:** settings
-`{ allowedToCreateApps: false, permissionGrantPoliciesAssigned: [managePermissionGrantsForSelf.microsoft-user-default-low] }`.
+`{ allowedToCreateApps: false, userConsentPolicies: [managePermissionGrantsForSelf.microsoft-user-default-low] }`
+(empty `userConsentPolicies: []` = user consent disabled entirely — the
+stricter SCuBA posture; low-risk is the shipped default, comment both).
 
 **Tests:**
 - [ ] registered CON-1/graph/singleton
-- [ ] `Get` projects the two flat keys from a nested fixture (extra
-  authorizationPolicy fields like `allowInvitesFrom` must NOT appear); array
-  sorted; bool typed
-- [ ] `Set` with both keys → one PATCH, body nests BOTH `allowedToCreateApps`
-  and `permissionGrantPoliciesAssigned` under `defaultUserRolePermissions`
+- [ ] `Get` projects the two flat keys from a nested fixture whose
+  `permissionGrantPoliciesAssigned` mixes self + owned-resource entries —
+  only the `managePermissionGrantsForSelf.*` ones appear, sorted; extra
+  authorizationPolicy fields like `allowInvitesFrom` must NOT appear
+- [ ] `Set` with both keys → GET then PATCH; the PATCH body's
+  `permissionGrantPoliciesAssigned` PRESERVES the live
+  `managePermissionGrantsForOwnedResource.DeveloperConsent` entry alongside
+  the desired self entries (the load-bearing test of this story)
 - [ ] `Set` with only `allowedToCreateApps` declared → the
   `defaultUserRolePermissions` body contains ONLY that key (no
-  `permissionGrantPoliciesAssigned`)
+  consent-policies key, and NO extra GET needed — assert none)
 - [ ] engine default-diff: legacy-consent fixture vs low-risk desired → Update
-  with one Change on `permissionGrantPoliciesAssigned`
+  with one Change on `userConsentPolicies`
 
 **Note:** control id is `CON-1` (covers both settings; the Jira story name
 says CON-1 + CON-3 — one control, two fields; record that in the Jira closing
@@ -907,14 +955,22 @@ function Invoke-M365ExoCommand {
 Seam tests: invokes the named command with the splat (register a fake function
 in the test scope); unknown command throws (loud).
 
-**Mechanism (✅ verified, ExchangeOnlineManagement 3.x):** preset state lives
-on the rules: `Get-EOPProtectionPolicyRule -Identity 'Standard Preset Security
-Policy'` / `Get-ATPProtectionPolicyRule -Identity 'Standard Preset Security
-Policy'`, each with `State` `Enabled`|`Disabled`; enable via
+**Mechanism (✅ verified 2026-07-25, ExchangeOnlineManagement 3.x):** preset
+state lives on the rules: `Get-EOPProtectionPolicyRule -Identity 'Standard
+Preset Security Policy'` / `Get-ATPProtectionPolicyRule -Identity 'Standard
+Preset Security Policy'`, each with `State` `Enabled`|`Disabled`; enable via
 `Enable-EOPProtectionPolicyRule` / `Enable-ATPProtectionPolicyRule`, disable
 via the `Disable-` pair. **The rules do not exist until the preset has been
-enabled once** (portal or `New-*ProtectionPolicyRule`) — treat "rule absent"
-as state `NotPresent`. ATP rule needs Defender for Office 365.
+turned on once in the Defender portal** — Microsoft explicitly documents that
+the portal is the ONLY supported way to create them (`New-*ProtectionPolicyRule`
+exists but is documented as not recommended, and needs policy names embedding
+an unpredictable timestamp). Treat "rule absent" as state `NotPresent` — this
+control is deliberately **not self-healing** (ADR-0011's consented-fix offer
+here IS the portal instruction; there is no supported programmatic fix).
+ATP rule + cmdlets need Defender for Office 365 — on EOP-only tenants the
+`defender-office365` capability gate blocks the whole control (EOP-only
+preset coverage is out of v1; note it when closing the Jira story). "All
+users" = empty rule conditions.
 
 **Implementation:** `-Id 'MDO-1' -Provider 'exo' -Shape 'preset' -Title
 'Standard preset security policy' -RequiredCapabilities @('exo',
@@ -974,6 +1030,12 @@ Project `@{ name; autoForwardingMode }` (both strings). Default compare.
 `AutoForwardingMode = desired`. v1 is **update-only** (no policy creation —
 the Default policy always exists).
 
+**Semantics note (encode in the profile YAML comment):** the tenant default
+`Automatic` was silently redefined by Microsoft to BEHAVE as `Off` — so the
+dry-run Change `Automatic -> Off` makes the setting explicit (the docs' own
+recommendation) without altering effective behavior. Say exactly that in the
+profile comment so an operator reading the plan isn't alarmed.
+
 **Tests:** registered · Get projects name+mode from a multi-policy fixture
 (picks Default) · Get throws when absent · Set calls the Set cmdlet with the
 right Identity/mode · engine diff `Automatic -> Off`.
@@ -1024,12 +1086,16 @@ is only meaningful in **Exchange Online** PowerShell — in Security &
 Compliance PowerShell it always reads `False`; our EXO-only session (research
 02) is the right one. (Most tenants have auditing on by default since 2019 —
 the control usually plans NoChange; it exists to catch the turned-it-off
-case.)
+case — and it is NOT on by default for Business Basic/Standard/Premium
+licences, so on SMB tenants expect it to be actionable.)
 
 **Implementation:** `-Id 'AUD-1' -Provider 'exo' -Shape 'singleton' -Title
 'Unified audit log ingestion' -RequiredCapabilities @('exo')`. `Get` →
 `@{ unifiedAuditLogIngestionEnabled = [bool] }`. `Set` → one
 `Set-AdminAuditLogConfig` call. Simplest EXO control; mirror S12.
+**Propagation note:** enabling takes up to 60 minutes to apply (hours to be
+searchable) — v1's apply reports the Set outcome and does NOT immediately
+re-read to verify; an instant re-read would false-fail. Don't add one.
 
 **Profile block:** `settings: { unifiedAuditLogIngestionEnabled: true }`.
 
@@ -1057,6 +1123,11 @@ Projection uses the **positive** vocabulary: `@{ auditEnabled = [bool] }` with
 back (`AuditDisabled = -not desired.auditEnabled`).
 **Scope decision (recorded):** per-mailbox audit actions (`Set-Mailbox
 -AuditOwner ...`) are OUT of v1 — org default only; note it in the Jira close.
+**Do not "improve" this with per-mailbox reads:** under audit-on-by-default,
+`Get-Mailbox` reports `AuditEnabled: True` for every mailbox regardless of
+reality, and setting it `$false` is silently ignored — the real exclusion
+mechanism is `Set-MailboxAuditBypassAssociation`, all of which is exactly why
+the per-mailbox surface is deferred.
 
 **Profile block:** `settings: { auditEnabled: true }`.
 
