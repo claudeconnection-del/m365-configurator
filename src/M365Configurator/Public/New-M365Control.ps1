@@ -27,7 +27,9 @@ function New-M365Control {
           Set      { param($Session, $Desired, $Current) } -> per-item apply result
 
         Get/Set/Compare are scriptblock seams: the engine injects the connected
-        session, and tests exercise the handler with no tenant.
+        session, and tests exercise the handler with no tenant. Because the
+        engine invokes them positionally, each seam must declare exactly the
+        param() signature above — enforced here at construction.
 
     .OUTPUTS
         pscustomobject (PSTypeName 'M365Configurator.Control').
@@ -35,10 +37,10 @@ function New-M365Control {
     [CmdletBinding()]
     [OutputType([pscustomobject])]
     param(
-        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $Id,
+        [Parameter(Mandatory)] [ValidatePattern('\S')] [string] $Id,
         [Parameter(Mandatory)] [ValidateSet('graph', 'exo')] [string] $Provider,
         [Parameter(Mandatory)] [ValidateSet('singleton', 'collection', 'policy-rule', 'preset')] [string] $Shape,
-        [Parameter(Mandatory)] [ValidateNotNullOrEmpty()] [string] $Title,
+        [Parameter(Mandatory)] [ValidatePattern('\S')] [string] $Title,
         [Parameter(Mandatory)] [scriptblock] $Get,
         [Parameter(Mandatory)] [scriptblock] $Set,
         [scriptblock] $Compare,
@@ -46,14 +48,43 @@ function New-M365Control {
         [string[]] $DependsOn = @()
     )
 
+    # The engine invokes the seams positionally, so a scriptblock that does not
+    # declare the contract's param() seam would mis-bind silently ($Session
+    # lands in $args) and only surface deep inside a dry-run or apply. Reject
+    # it here instead (NFR-6).
+    $seams = @(
+        @{ Name = 'Get'; Block = $Get; Params = @('Session') }
+        @{ Name = 'Set'; Block = $Set; Params = @('Session', 'Desired', 'Current') }
+    )
+    if ($Compare) {
+        $seams += @{ Name = 'Compare'; Block = $Compare; Params = @('Desired', 'Current') }
+    }
+    foreach ($seam in $seams) {
+        $paramBlock = $seam.Block.Ast.ParamBlock
+        $declared = @()
+        if ($null -ne $paramBlock) {
+            $declared = @($paramBlock.Parameters.Name.VariablePath.UserPath)
+        }
+        $expected = @($seam.Params)
+        $matching = ($declared.Count -eq $expected.Count)
+        for ($i = 0; $matching -and $i -lt $expected.Count; $i++) {
+            $matching = ($declared[$i] -eq $expected[$i])
+        }
+        if (-not $matching) {
+            $signature = 'param(${0})' -f ($expected -join ', $')
+            throw ("Control '{0}': the {1} seam must declare {2} (ADR-0013); got param({3})." -f `
+                    $Id, $seam.Name, $signature, (@($declared | ForEach-Object { "`$$_" }) -join ', '))
+        }
+    }
+
     [pscustomobject]@{
         PSTypeName           = 'M365Configurator.Control'
         Id                   = $Id
         Provider             = $Provider
         Shape                = $Shape
         Title                = $Title
-        RequiredCapabilities = @($RequiredCapabilities)
-        DependsOn            = @($DependsOn)
+        RequiredCapabilities = @($RequiredCapabilities | Where-Object { $null -ne $_ })
+        DependsOn            = @($DependsOn | Where-Object { $null -ne $_ })
         Get                  = $Get
         Compare              = $Compare
         Set                  = $Set

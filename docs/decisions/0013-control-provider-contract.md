@@ -52,6 +52,12 @@ Compare  [scriptblock] { param($Desired,$Current)            -> { Action; Change
 Set      [scriptblock] { param($Session,$Desired,$Current)   -> per-item apply result }
 ```
 
+The constructor (`New-M365Control`) **enforces these seam signatures at
+construction**: the engine invokes seams positionally, so a handler whose
+scriptblock doesn't declare the exact `param()` seam above would mis-bind
+silently and only fail deep inside a plan or apply. It is rejected loudly at
+build time instead (NFR-6).
+
 - **The engine is generic.** Given a profile, a set of registered handlers, and a
   connected session it computes a **plan** (`Plan`), applies it (`Apply`), and
   scans for **drift** (`Drift`) without knowing anything control-specific:
@@ -115,6 +121,29 @@ Set      [scriptblock] { param($Session,$Desired,$Current)   -> per-item apply r
 - **Reversible:** this is an internal contract behind the CLI, not a user-facing
   or wire format. It can evolve as later mechanism classes (PIM, DKIM async,
   custom Defender policies) arrive without breaking profiles.
+- **Isolates cmdlet-syntax churn (NFR-7):** all provider knowledge for a control
+  — including the exact cmdlet/endpoint syntax it drives — lives inside that one
+  handler, so a Graph/EXO module version bump that changes cmdlet syntax has a
+  blast radius of one handler, not the engine.
+
+## Deferred follow-ups (engine scope, tracked so they aren't lost)
+
+Flagged by independent review (2026-07-24); none blocks this contract, all land
+with the engine stories:
+
+1. **`DependsOn` cycle & dangling-reference handling (MCA-17/MCA-18).** The
+   engine must order plan items by a topological sort that **fails loud on a
+   cycle** (NFR-6) and on a `DependsOn` id that resolves to no registered
+   handler — never silently drop or reorder.
+2. **Registry seam contract (MCA-4/MCA-5).** Handler discovery is deliberately
+   unspecified here beyond "injected set". When the real provider registry
+   lands it must define: id uniqueness (duplicate registration = loud failure)
+   and deterministic discovery order.
+3. **Compare/Get output validation (MCA-17).** `Action ∈ NoChange|Create|
+   Update|Blocked|Unsupported` is prose, not code. The engine validates every
+   plan item's `Action` against that enum and requires `Get` output to be
+   canonicalizable (ADR-0008) — a custom `Compare` returning an unknown action
+   is a loud plan-time failure, not an unmapped branch.
 
 ## Alternatives considered
 

@@ -86,4 +86,77 @@ Describe 'New-M365Control' {
         { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
             -Get { param($Session) } } | Should -Throw
     }
+
+    # -- independent-review findings (MCA-37) ---------------------------------
+
+    It 'exposes exactly the contract fields, nothing more' {
+        $control = New-M365Control -Id 'ID-1' -Provider 'graph' -Shape 'singleton' `
+            -Title 'Security defaults' -Get { param($Session) } -Set { param($Session, $Desired, $Current) }
+
+        $expected = @('Id', 'Provider', 'Shape', 'Title', 'RequiredCapabilities', 'DependsOn', 'Get', 'Compare', 'Set')
+        $control.PSObject.Properties.Name | Should -Be $expected
+    }
+
+    It 'rejects a Get seam that does not declare param($Session) (loud, fast — NFR-6)' {
+        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
+            -Get { 42 } -Set { param($Session, $Desired, $Current) } } |
+            Should -Throw -ExpectedMessage '*Get*param($Session)*'
+    }
+
+    It 'rejects a Set seam that does not declare param($Session, $Desired, $Current)' {
+        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
+            -Get { param($Session) } -Set { 99 } } |
+            Should -Throw -ExpectedMessage '*Set*param($Session, $Desired, $Current)*'
+        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
+            -Get { param($Session) } -Set { param($OnlyOne) } } |
+            Should -Throw -ExpectedMessage '*Set*param($Session, $Desired, $Current)*'
+    }
+
+    It 'rejects a Compare seam that does not declare param($Desired, $Current)' {
+        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
+            -Get { param($Session) } -Set { param($Session, $Desired, $Current) } `
+            -Compare { param($Wrong) } } |
+            Should -Throw -ExpectedMessage '*Compare*param($Desired, $Current)*'
+    }
+
+    It 'treats explicit $null capability/dependency input as empty, not as a null element' {
+        $control = New-M365Control -Id 'ID-1' -Provider 'graph' -Shape 'singleton' `
+            -Title 'Security defaults' -Get { param($Session) } -Set { param($Session, $Desired, $Current) } `
+            -RequiredCapabilities $null -DependsOn $null
+
+        $control.RequiredCapabilities.Count | Should -Be 0
+        $control.DependsOn.Count            | Should -Be 0
+    }
+
+    It 'rejects a whitespace-only id and title' {
+        { New-M365Control -Id '   ' -Provider 'graph' -Shape 'singleton' -Title 'X' `
+            -Get { param($Session) } -Set { param($Session, $Desired, $Current) } } | Should -Throw
+        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title '   ' `
+            -Get { param($Session) } -Set { param($Session, $Desired, $Current) } } | Should -Throw
+    }
+
+    It 'holds an independent copy of RequiredCapabilities and DependsOn' {
+        $caps = [string[]]@('EntraIdP2')
+        $deps = [string[]]@('ID-1')
+
+        $control = New-M365Control -Id 'ID-2' -Provider 'graph' -Shape 'collection' `
+            -Title 'Block legacy auth' -Get { param($Session) } -Set { param($Session, $Desired, $Current) } `
+            -RequiredCapabilities $caps -DependsOn $deps
+
+        $caps[0] = 'MUTATED'
+        $deps[0] = 'MUTATED'
+
+        $control.RequiredCapabilities | Should -Be @('EntraIdP2')
+        $control.DependsOn            | Should -Be @('ID-1')
+    }
+
+    It 'stores the seams as directly runnable scriptblocks' {
+        $control = New-M365Control -Id 'ID-1' -Provider 'graph' -Shape 'singleton' `
+            -Title 'Security defaults' `
+            -Get { param($Session) "got:$Session" } `
+            -Set { param($Session, $Desired, $Current) "set:$Session/$Desired/$Current" }
+
+        & $control.Get 's1'           | Should -Be 'got:s1'
+        & $control.Set 's1' 'd' 'c'   | Should -Be 'set:s1/d/c'
+    }
 }
