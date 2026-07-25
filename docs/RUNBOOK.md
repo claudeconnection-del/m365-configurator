@@ -273,7 +273,7 @@ pushed).
 - [x] **S15 · MCA-19** — Drift detection
 - [x] **S16 · MCA-20** — Deterministic remediation
 - [x] **S17 · MCA-16** — Name remapping
-- [ ] **S18 · MCA-35** — Structured audit log
+- [x] **S18 · MCA-35** — Structured audit log
 - [ ] **S19 · MCA-36** — CLI dispatcher
 - [ ] **S20** — Close-out: REQUIREMENTS.md status boxes, Confluence, ROADMAP
 
