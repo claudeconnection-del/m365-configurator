@@ -163,6 +163,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Name -eq 'Get-EOPProtectionPolicyRule') { return [pscustomobject]@{ State = 'Enabled' } }
             if ($Name -eq 'Get-ATPProtectionPolicyRule') { return [pscustomobject]@{ State = 'Enabled' } }
             if ($Name -eq 'Get-HostedOutboundSpamFilterPolicy') { return @([pscustomobject]@{ Name = 'Default'; AutoForwardingMode = 'Off' }) }
+            if ($Name -eq 'Get-ExternalInOutlook') { return @([pscustomobject]@{ Identity = 'Default'; Enabled = $true; AllowList = @() }) }
         }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -Session @{ Capabilities = @('graph', 'exo', 'defender-office365') } -InformationAction Ignore
@@ -177,6 +178,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         ($plan.Items | Where-Object { $_.Id -eq 'SHR-1' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'MDO-1' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'MDO-4' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'MDO-10' }).Action | Should -Be 'NoChange'
     }
 }
 

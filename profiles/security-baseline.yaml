@@ -147,3 +147,16 @@ controls:
     settings:
       name: Default
       autoForwardingMode: "Off"
+
+  # MDO-10 — External sender warning, native Outlook tag (SCuBA
+  # MS.EXO.7.1v1). Low-friction phishing-awareness signal; no mail-flow rule
+  # needed. Set-ExternalInOutlook has no -WhatIf, so the engine's own diff is
+  # the entire dry-run safety net for this control (research 05 2.3).
+  - id: MDO-10
+    name: External sender warning (Outlook native tag)
+    provider: exo
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      enabled: true
+      allowList: []
