@@ -264,7 +264,7 @@ pushed).
 - [x] **S6 · MCA-26** — CON-1 + CON-3 consent & app-registration policy
 - [x] **S7 · MCA-27** — CON-2 admin consent workflow
 - [x] **S8 · MCA-28** — SHR-1 restrict guest inviters
-- [ ] **S9 · MCA-21** — Session + capability gating
+- [x] **S9 · MCA-21** — Session + capability gating
 - [ ] **S10 · MCA-30** — MDO-1 Standard preset security policy (+ EXO seam)
 - [ ] **S11 · MCA-31** — MDO-4 block external auto-forwarding
 - [ ] **S12 · MCA-32** — MDO-10 external sender warning
