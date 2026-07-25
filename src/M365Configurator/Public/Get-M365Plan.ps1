@@ -32,7 +32,10 @@ function Get-M365Plan {
         pscustomobject (PSTypeName 'M365Configurator.Plan'): ProfileName, Signal
         ('Pass' | 'NeedsAttention'), Summary (per-Action counts), Items[].
         Each item: Id, Title, Provider, Action
-        ('NoChange' | 'Create' | 'Update' | 'Blocked' | 'Unsupported'), Changes[], Gate.
+        ('NoChange' | 'Create' | 'Update' | 'Blocked' | 'Unsupported'), Changes[], Gate,
+        Desired, Current. Desired/Current are stashed so the apply engine
+        (MCA-18) can invoke a handler's Set without a second read; Current is
+        $null for a Blocked/Unsupported item (Get is never called for either).
     #>
     [CmdletBinding()]
     [OutputType([pscustomobject])]
@@ -135,6 +138,7 @@ function Get-M365Plan {
         $gate    = $null
         $title   = $rec.Id
         $provider = $null
+        $current  = $null
 
         if ($null -eq $rec.Handler) {
             # No provider knows this control id — surface it, never silently skip.
@@ -192,6 +196,8 @@ function Get-M365Plan {
                 Action   = $action
                 Changes  = @($changes)
                 Gate     = $gate
+                Desired  = $rec.Desired
+                Current  = $current
             })
     }
 

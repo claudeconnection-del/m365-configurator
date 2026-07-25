@@ -221,6 +221,38 @@ Describe 'Get-M365Plan' {
         { Get-M365Plan -Profile $profile -Registry $registry } | Should -Throw '*non-map*'
     }
 
+    It 'stashes Desired and Current on a plan item so the apply engine (MCA-18) does not need to re-read either' {
+        $registry = @(
+            New-M365Control -Id 'A' -Provider 'graph' -Shape 'singleton' -Title 'Ctl A' `
+                -Get { param($Session) @{ enabled = $true } } -Set { param($Session, $Desired, $Current) }
+        )
+        $profile = New-TestProfile @( New-TestControl -Id 'A' -Settings @{ enabled = $false } )
+
+        $plan = Get-M365Plan -Profile $profile -Registry $registry
+
+        $plan.Items[0].Desired.enabled | Should -BeFalse
+        $plan.Items[0].Current.enabled | Should -BeTrue
+    }
+
+    It 'leaves Current $null on a Blocked or Unsupported item (Get is never called for either)' {
+        $registry = @(
+            New-M365Control -Id 'GATED' -Provider 'graph' -Shape 'singleton' -Title 'Gated' `
+                -RequiredCapabilities @('entra-id-p2') `
+                -Get { param($Session) throw 'Get must not run for a blocked control' } -Set { param($Session, $Desired, $Current) }
+        )
+        $profile = New-TestProfile @(
+            New-TestControl -Id 'GATED' -Settings @{ x = 1 }
+            New-TestControl -Id 'GHOST' -Settings @{ y = 2 }
+        )
+
+        $plan = Get-M365Plan -Profile $profile -Registry $registry
+
+        ($plan.Items | Where-Object Id -eq 'GATED').Current    | Should -BeNullOrEmpty
+        ($plan.Items | Where-Object Id -eq 'GATED').Desired.x  | Should -Be 1
+        ($plan.Items | Where-Object Id -eq 'GHOST').Current    | Should -BeNullOrEmpty
+        ($plan.Items | Where-Object Id -eq 'GHOST').Desired.y  | Should -Be 2
+    }
+
     It 'summarises per-Action counts across a mixed plan' {
         $registry = @(
             New-M365Control -Id 'SAME' -Provider 'graph' -Shape 'singleton' -Title 'Same' `
