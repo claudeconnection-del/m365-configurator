@@ -268,7 +268,7 @@ pushed).
 - [x] **S10 · MCA-30** — MDO-1 Standard preset security policy (+ EXO seam)
 - [x] **S11 · MCA-31** — MDO-4 block external auto-forwarding
 - [x] **S12 · MCA-32** — MDO-10 external sender warning
-- [ ] **S13 · MCA-33** — AUD-1 unified audit log
+- [x] **S13 · MCA-33** — AUD-1 unified audit log
 - [ ] **S14 · MCA-34** — AUD-2 mailbox auditing (org default)
 - [ ] **S15 · MCA-19** — Drift detection
 - [ ] **S16 · MCA-20** — Deterministic remediation
