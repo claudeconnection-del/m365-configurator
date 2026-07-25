@@ -1,0 +1,29 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+env:
+  # ADR-0015 (amended 2026-07-25): floor = target = PowerShell 7.6 LTS / .NET 10.
+  # Pinned exactly; bump the patch deliberately. MCR had no 7.6 container image
+  # as of 2026-07-25 — when mcr.microsoft.com/powershell grows a 7.6-ubuntu-*
+  # tag, this job can become a container: job instead of the tarball install.
+  PWSH_VERSION: '7.6.4'
+jobs:
+  pester:
+    name: pester (pinned pwsh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned PowerShell from the official release tarball
+        run: |
+          curl -sSL --fail -o /tmp/pwsh.tar.gz "https://github.com/PowerShell/PowerShell/releases/download/v${PWSH_VERSION}/powershell-${PWSH_VERSION}-linux-x64.tar.gz"
+          mkdir -p "$HOME/pwsh"
+          tar -xzf /tmp/pwsh.tar.gz -C "$HOME/pwsh"
+          chmod +x "$HOME/pwsh/pwsh"
+          "$HOME/pwsh/pwsh" -NoProfile -Command '$PSVersionTable.PSVersion.ToString()'
+      - name: Install pinned runtime modules
+        run: "$HOME/pwsh/pwsh" -NoProfile -File scripts/install-modules.ps1
+      - name: Install pinned dev tools (Pester 6.0.1)
+        run: "$HOME/pwsh/pwsh" -NoProfile -File scripts/install-dev-tools.ps1
+      - name: Run test suite
+        run: "$HOME/pwsh/pwsh" -NoProfile -Command "Invoke-Pester -Path tests/ -CI"
