@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for New-M365Control — the constructor/validator for a control handler,
     the unit of provider knowledge for exactly one control (ADR-0013; MCA-6).

@@ -5,8 +5,8 @@ This guide gets you productive on any machine and describes how we work.
 ## 1. Get a working environment
 
 See the [Quickstart in the README](README.md#quickstart--clone-and-develop-anywhere).
-The **dev container** is the reproducible path; local PowerShell 7+ with
-`scripts/bootstrap.ps1` also works.
+The **dev container** is the reproducible path; local PowerShell **7.6+**
+(the ADR-0015 floor) with `scripts/bootstrap.ps1` also works.
 
 Verify your environment:
 

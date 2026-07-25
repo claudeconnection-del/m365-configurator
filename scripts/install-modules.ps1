@@ -46,6 +46,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'  # keeps CI/container logs clean
 
+# Floor check BEFORE the module import below: the manifest requires 7.6, so on a
+# downlevel host Import-Module would fail with PowerShell's terse version error —
+# fail here with guidance instead (ADR-0015 amended; ADR-0011). The #requires
+# header stays below the floor on purpose so this message can run.
+$floor = [version] '7.6.0'
+if ($PSVersionTable.PSVersion -lt $floor) {
+    throw ("PowerShell {0}+ is required; you are on {1} (outside the ADR-0015 support window). Install the current LTS from https://aka.ms/powershell and re-run." -f $floor, $PSVersionTable.PSVersion)
+}
+
 function Write-Step { param([string] $Message) Write-Host "==> $Message" -ForegroundColor Cyan }
 function Write-Ok   { param([string] $Message) Write-Host "  ✓ $Message" -ForegroundColor Green }
 function Write-Skip { param([string] $Message) Write-Host "  • $Message" -ForegroundColor DarkGray }

@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 
 function Invoke-M365GraphRequest {
     <#

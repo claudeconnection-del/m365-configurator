@@ -4,10 +4,11 @@
     GUID              = '7683d159-d912-4758-bd60-dad5ac074357'
     Author            = 'm365-configurator contributors'
     Description       = 'Portable, profile-driven configurator for Microsoft 365 (Graph + Exchange Online).'
-    # Floor, not target: 7.4 is the previous LTS (supported to 10-Nov-2026) so a
-    # laptop on it still works; the container and CI pin 7.6.x/.NET 10 (ADR-0015).
-    # Raise this to '7.6' at the 10-Nov-2026 revisit trigger.
-    PowerShellVersion = '7.4'
+    # Floor = target: 7.6 LTS / .NET 10, supported to 14-Nov-2028. A lower floor
+    # is foreclosed by the module pins: ExchangeOnlineManagement 3.10.0+ requires
+    # PowerShell 7.6+ (.NET 10 assemblies) — see Get-M365RequiredModule.ps1 and
+    # ADR-0015 (amended 2026-07-25). Tests guard this coupling.
+    PowerShellVersion = '7.6'
 
     # Exported functions are declared explicitly per public file; the root module
     # also calls Export-ModuleMember. Keep this list in sync as public functions land.

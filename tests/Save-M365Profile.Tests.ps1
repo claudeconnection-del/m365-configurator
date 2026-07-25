@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Save-M365Profile — persist the current in-scope tenant configuration
     as a named, versioned, config-only profile (MCA-14; FR-5; ADR-0008/0009).

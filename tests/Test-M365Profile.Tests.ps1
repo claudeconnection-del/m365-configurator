@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Test-M365Profile — validation of a profile against schema v1
     (MCA-13; FR-5, NFR-1). The schema is config-only: each control is tagged with

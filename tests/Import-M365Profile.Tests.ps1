@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Get-M365Profile (list/select) and Import-M365Profile (load/import a
     file) — MCA-15; FR-6; ADR-0009.

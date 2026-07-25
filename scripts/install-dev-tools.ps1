@@ -25,6 +25,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference    = 'SilentlyContinue'
 
+# Floor check (ADR-0015, amended): the test suite imports the module manifest,
+# which requires 7.6 — installing the tooling on an older host would only defer
+# the failure to the first Invoke-Pester. The #requires header stays below the
+# floor on purpose so this message can run (ADR-0011).
+$floor = [version] '7.6.0'
+if ($PSVersionTable.PSVersion -lt $floor) {
+    throw ("PowerShell {0}+ is required; you are on {1} (outside the ADR-0015 support window). Install the current LTS from https://aka.ms/powershell and re-run." -f $floor, $PSVersionTable.PSVersion)
+}
+
 function Write-Step { param([string] $Message) Write-Host "==> $Message" -ForegroundColor Cyan }
 function Write-Ok   { param([string] $Message) Write-Host "  ✓ $Message" -ForegroundColor Green }
 function Write-Skip { param([string] $Message) Write-Host "  • $Message" -ForegroundColor DarkGray }

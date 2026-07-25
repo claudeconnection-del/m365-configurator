@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Get-M365ModuleRemediation — the "self-healing" offer. Instead of
     just reporting a missing/outdated module, the app turns each unsatisfied

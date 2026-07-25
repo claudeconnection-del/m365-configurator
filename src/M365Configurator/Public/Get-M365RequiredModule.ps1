@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 
 function Get-M365RequiredModule {
     <#
@@ -32,6 +32,10 @@ function Get-M365RequiredModule {
         Reason  = 'Connect/disconnect Microsoft Graph + on-demand Graph sub-module loading'
     }
     [pscustomobject]@{
+        # RUNTIME COUPLING: 3.10.0+ requires PowerShell 7.6+ (.NET 10 assembly
+        # dependencies — Microsoft EXO module docs; research 02 §7). The module
+        # manifest's PowerShellVersion floor must stay >= 7.6 while this pin is
+        # >= 3.10.0 (ADR-0015, amended 2026-07-25; guarded by the manifest tests).
         Name    = 'ExchangeOnlineManagement'
         Version = '3.10.0'
         Reason  = 'Exchange Online / Defender for Office 365 configuration'

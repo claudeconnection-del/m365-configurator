@@ -73,12 +73,12 @@ Then pick **one** of:
 
 Open the folder in VS Code with the **Dev Containers** extension and choose
 **"Reopen in Container"** (or use the Dev Containers CLI). The container ships
-PowerShell 7 and, on create, runs [`scripts/install-modules.ps1`](scripts/install-modules.ps1)
+PowerShell 7.6 and, on create, runs [`scripts/install-modules.ps1`](scripts/install-modules.ps1)
 and [`scripts/install-dev-tools.ps1`](scripts/install-dev-tools.ps1) — so the M365
 modules **and** the test runner (Pester) are ready, and you can run
 `Invoke-Pester -Path tests/` as soon as it finishes building.
 
-### Option B — Local PowerShell (7.4 LTS or newer)
+### Option B — Local PowerShell (7.6 LTS or newer)
 
 If you already have a [supported PowerShell](https://learn.microsoft.com/powershell/scripting/install/installing-powershell)
 installed:
@@ -99,24 +99,23 @@ rights, no system changes) and prints the versions it installed.
 ### Supported PowerShell versions
 
 Version-pinning covers the runtime as well as the modules
-([ADR-0015](docs/decisions/0015-runtime-version-pin-powershell-lts.md)). PowerShell's
-support lifecycle follows .NET's:
+([ADR-0015](docs/decisions/0015-runtime-version-pin-powershell-lts.md), amended
+2026-07-25). The floor and the shipped target are the **same version pair**:
 
 | | Version | .NET | Supported until |
 | --- | --- | --- | --- |
-| **Floor** (module manifest requires) | 7.4 LTS | .NET 8 | 10-Nov-2026 |
-| **Target** (shipped container + CI) | 7.6 LTS | .NET 10 | 14-Nov-2028 |
+| **Floor = target** (manifest, container, CI) | 7.6 LTS | .NET 10 | 14-Nov-2028 |
 
-Anything from 7.4 up will load. 7.5 works but is a non-LTS line that also expires
-10-Nov-2026, so prefer 7.4 or 7.6. **7.0–7.3 are out of support and are rejected at
-import** rather than failing later somewhere confusing.
+**Why not lower:** the pinned `ExchangeOnlineManagement` module (3.10.0)
+requires PowerShell 7.6+ for its .NET 10 assemblies, so any lower floor would
+accept the import and then fail later, confusingly, in the EXO module. Instead
+**anything below 7.6 is rejected at import** (and the bootstrap scripts explain
+the floor and the fix before that). A repo test guards the module-pin ↔ runtime
+coupling so it cannot silently drift.
 
-The dev container pins the **floor** (7.4) on purpose — code that runs there runs on
-the target too, but not the reverse, so developing against the floor catches
-accidental use of APIs a 7.4 user could not run.
-
-> At the **10-Nov-2026** revisit trigger, 7.4 leaves support and the floor rises to
-> 7.6. That is a deliberate amendment to ADR-0015, not a silent drift.
+> The floor moves only by deliberate amendment to ADR-0015 — when a newer LTS
+> ships, when 7.6 approaches its 14-Nov-2028 end of support, or when a module
+> pin changes its runtime requirement.
 
 ## Running the tests
 

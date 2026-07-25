@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Connect-M365Graph / Disconnect-M365Graph — establishing and tearing
     down a Microsoft Graph session on demand, with tokens held in memory ONLY

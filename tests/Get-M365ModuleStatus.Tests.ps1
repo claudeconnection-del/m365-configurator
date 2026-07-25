@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Get-M365ModuleStatus — the pure decision logic that decides, for
     each required module, whether an installed version satisfies the pin. This

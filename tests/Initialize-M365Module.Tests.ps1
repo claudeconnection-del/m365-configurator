@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Initialize-M365Module — the orchestration that ties the module
     lifecycle together (MCA-2): detect status -> for each unsatisfied module

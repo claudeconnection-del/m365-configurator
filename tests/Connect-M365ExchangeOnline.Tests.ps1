@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Connect-M365ExchangeOnline / Disconnect-M365ExchangeOnline — the
     Exchange Online half of the connection foundation (MCA-11; FR-2, NFR-1;

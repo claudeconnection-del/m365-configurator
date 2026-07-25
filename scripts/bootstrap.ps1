@@ -1,4 +1,7 @@
 #requires -Version 7.0
+# ^ Deliberately BELOW the 7.6 floor (ADR-0015): this script must still run on a
+#   downlevel pwsh so the guard below can explain the floor and the fix
+#   (ADR-0011) instead of dying on PowerShell's terse #requires error.
 <#
 .SYNOPSIS
     One-shot local setup for m365-configurator (PowerShell entry point).
@@ -28,8 +31,12 @@ $ErrorActionPreference = 'Stop'
 Write-Host "m365-configurator — local bootstrap" -ForegroundColor Cyan
 Write-Host "PowerShell $($PSVersionTable.PSVersion) on $($PSVersionTable.Platform)"
 
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    throw "PowerShell 7+ is required. Install it from https://aka.ms/powershell and re-run."
+# Full-version floor check (ADR-0015, amended): 7.6 LTS / .NET 10. The pinned
+# ExchangeOnlineManagement 3.10.0 cannot load its .NET 10 assemblies on anything
+# older, and the module manifest rejects import below 7.6.
+$floor = [version] '7.6.0'
+if ($PSVersionTable.PSVersion -lt $floor) {
+    throw ("PowerShell {0}+ is required; you are on {1} (outside the ADR-0015 support window). Install the current LTS from https://aka.ms/powershell and re-run." -f $floor, $PSVersionTable.PSVersion)
 }
 
 $here = Split-Path -Parent $PSCommandPath

@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Get-M365Plan — the provider-agnostic dry-run engine (MCA-17; FR-8,
     NFR-6, NFR-9; ADR-0013). Driven entirely with in-memory fake control handlers

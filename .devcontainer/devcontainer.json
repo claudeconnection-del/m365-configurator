@@ -1,19 +1,18 @@
 {
   // Reproducible development environment for m365-configurator.
-  // Ships PowerShell 7 and, on create, installs the required M365 modules AND the
-  // dev/test tooling (Pester), so a fresh `git clone` + "Reopen in Container" is
-  // enough to develop and to run `Invoke-Pester -Path tests/`.
+  // Ships PowerShell 7.6 and, on create, installs the required M365 modules AND
+  // the dev/test tooling (Pester), so a fresh `git clone` + "Reopen in Container"
+  // is enough to develop and to run `Invoke-Pester -Path tests/`.
   "name": "m365-configurator",
   "image": "mcr.microsoft.com/devcontainers/base:bookworm",
 
   "features": {
-    // Pinned to 7.4 — the supported FLOOR, not the shipped target (ADR-0015).
-    // Deliberate: the shipped container pins 7.6/.NET 10, and code that runs on the
-    // floor runs on the target, but not the reverse. Developing here therefore
-    // catches accidental use of .NET-10-only APIs that 7.4 users could not run.
-    // Raise to 7.6 at the 10-Nov-2026 revisit, when 7.4 leaves support.
+    // Pinned to 7.6 — the ADR-0015 floor AND target (amended 2026-07-25: the
+    // pinned ExchangeOnlineManagement 3.10.0 requires 7.6+/.NET 10, so there is
+    // no lower floor to develop against). The SHIPPED container (MCA-9, Phase 5)
+    // will pin the same 7.6.x/.NET 10 pair.
     "ghcr.io/devcontainers/features/powershell:1": {
-      "version": "7.4"
+      "version": "7.6"
     },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },

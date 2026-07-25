@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Invoke-M365GraphRequest — the module's single Microsoft Graph call
     seam over Invoke-MgGraphRequest (ADR-0014). The SDK cmdlet is the mocked

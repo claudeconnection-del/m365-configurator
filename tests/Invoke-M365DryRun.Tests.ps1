@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Invoke-M365DryRun — the owner-facing dry-run entry point (MCA-17) —
     and Format-M365Plan, its readable renderer (NFR-9). Fake controls + an injected

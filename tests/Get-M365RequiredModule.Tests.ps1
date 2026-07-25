@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Get-M365RequiredModule — the single source of truth for the
     PowerShell modules m365-configurator depends on and their pinned versions

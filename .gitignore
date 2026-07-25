@@ -91,3 +91,7 @@ npm-debug.log*
 .tmp/
 tmp/
 coverage/
+
+# --- Test-runner output (Invoke-Pester -CI writes these to the invocation dir) ---
+testResults.xml
+coverage.xml

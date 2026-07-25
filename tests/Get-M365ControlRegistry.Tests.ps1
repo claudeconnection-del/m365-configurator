@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Get-M365ControlRegistry (the ADR-0013 registry seam) and, through the
     control it returns, the ID-1 security-defaults Graph control (MCA-22). The Graph

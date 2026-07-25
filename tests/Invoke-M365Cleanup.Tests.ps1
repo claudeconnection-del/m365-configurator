@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for Invoke-M365Cleanup — verified credential cleanup on disconnect /
     session end (MCA-12; FR-3, NFR-1). It is the aggregate teardown the app runs

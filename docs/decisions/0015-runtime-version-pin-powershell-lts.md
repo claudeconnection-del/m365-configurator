@@ -1,9 +1,10 @@
-# 0015. Runtime version pin: floor PowerShell 7.4 LTS, target 7.6 LTS / .NET 10
+# 0015. Runtime version pin: PowerShell 7.6 LTS / .NET 10 (floor = target)
 
-- **Status:** Accepted
+- **Status:** Accepted — **amended 2026-07-25** (independent review of MCA-39):
+  floor raised 7.4 → 7.6; floor and target collapsed. See "Amendment" below.
 - **Date:** 2026-07-25
 - **Deciders:** Project owner
-- **Requirements:** NFR-3, NFR-4, NFR-7, NFR-8
+- **Requirements:** NFR-4, NFR-7, NFR-8
 - **Related:** ADR-0005 (core runtime: pure PowerShell 7), ADR-0007 (container runtime model); Jira MCA-39, MCA-9
 
 ## Context
@@ -46,22 +47,35 @@ on 2026-07-25:
 
 ## Decision
 
-Pin the runtime at two levels:
+Pin the runtime to **one version pair: PowerShell 7.6.x (LTS) on .NET 10 (LTS)**.
 
-- **Floor: PowerShell 7.4 (LTS).** The module manifest requires `7.4`, so a
-  consultant laptop still on the previous LTS can run the tool through the overlap
-  window. This is a *floor*, not a target.
-- **Target: PowerShell 7.6.x (LTS) on .NET 10 (LTS).** The container base image
-  (`mcr.microsoft.com/powershell:7.6-<distro>`) and CI both pin to this exact pair,
-  so shipped behaviour is reproducible and matches what we test.
+- **Floor = target: PowerShell 7.6.** The module manifest requires `7.6`; the
+  container base image and CI pin the same pair, so shipped behaviour is
+  reproducible and matches what we test.
+- **Revisit triggers:** (a) a newer PowerShell LTS ships, (b) 7.6 approaches its
+  14-Nov-2028 end of support, or (c) a module-pin bump changes its runtime
+  requirement. Each is a deliberate amendment here — never a silent drift.
 
-**Revisit trigger: 10-Nov-2026**, when 7.4 goes out of support. At that point the
-floor rises to 7.6 and this ADR is amended — not silently drifted.
+### Amendment (2026-07-25, from the independent MCA-39 review)
 
-We deliberately do **not** pin to 7.4/.NET 8 as the target despite it being the
-older, more conservative LTS: it has under four months of support left, so
-"conservative" would mean shipping on a runtime that goes dark before the tool
-does.
+As first accepted, this ADR set a **7.4 floor** with a 7.6 target, to let a
+laptop on the previous LTS run the tool through the ~3.5-month overlap window.
+The independent review found that floor **unreachable**: the pinned
+`ExchangeOnlineManagement` **3.10.0** (module pin, MCA-2) *requires PowerShell
+7.6+* due to .NET 10 assembly dependencies — a constraint Microsoft documents
+and the project's own research recorded
+([research 02](../research/02-exchange-online-surface.md) §7). On 7.4 the
+manifest would accept the import and the EXO module would fail later with an
+assembly-load error — exactly the confusing late failure NFR-6 exists to
+prevent. The overlap the 7.4 floor was preserving was therefore already
+foreclosed. The alternative (downgrading the EXO pin to 3.9.2) was rejected:
+it ships a superseded module and forgoes .NET 10 for a type surface we don't
+need to keep.
+
+The module-pin ↔ runtime coupling is now recorded beside the pin in
+`Get-M365RequiredModule.ps1` and **guarded by tests**
+(`tests/M365Configurator.Manifest.Tests.ps1`), so a future runtime or module
+bump cannot silently re-break it.
 
 ## Consequences
 
@@ -71,29 +85,33 @@ does.
 - **NFR-8 (reproducible build)** gains a real anchor: the container build is
   deterministic across rebuilds instead of floating with `latest`.
 - **NFR-3 (minimal dependencies)** is unaffected — this pins an existing
-  dependency rather than adding one.
+  dependency rather than adding one (hence NFR-3 is not claimed in the header).
 - **The manifest floor is now honest.** `Import-Module` fails fast with a clear
   version error on an unsupported runtime, instead of loading and failing later in
-  an unrelated place (NFR-6).
-- **Trade-off — a supported-version window, not a single version.** Accepting 7.4
-  through 7.6 means the .NET surface is not identical across every environment the
-  module *can* load in, only across the one we *ship*. Mitigated by CI running the
-  pinned target and by the floor rising at the revisit trigger. Tests must not
-  depend on .NET-10-only APIs while the floor is 7.4.
-- **Follow-up:** the container base-image pin lands with the Dockerfile in MCA-9;
-  this ADR records the value to use so that work has no open question.
+  an unrelated place (NFR-6). The bootstrap/install scripts additionally check the
+  full version *before* the module import so downlevel hosts get an actionable
+  message with the install URL (ADR-0011), not PowerShell's terse `#requires`
+  error.
+- **Trade-off — one exact type surface.** Floor = target means anyone below 7.6
+  cannot run the tool at all. Accepted: the EXO module pin imposes 7.6 anyway,
+  and a single pinned pair is maximally reproducible (NFR-7/NFR-8).
+- **Follow-up:** the container base-image pin lands with the Dockerfile in MCA-9.
+  Note (checked 2026-07-25): `mcr.microsoft.com/powershell` publishes **no 7.6
+  image yet** (newest is 7.5) — until it does, the container/CI install pinned
+  7.6.x from the official GitHub release artifacts.
 - **Follow-up:** there is no CI yet (`.github/workflows/` does not exist). When it
-  lands it should run the suite as a **matrix over both ends of the window** — 7.4
-  (floor) and 7.6 (target) — which is the only way the trade-off above is actually
-  verified rather than assumed. Until then the coverage is incidental: the dev
-  container runs 7.4 and the owner's workstation runs 7.6.4.
+  lands it runs the suite on the **pinned 7.6.x** (floor = target, so a single
+  leg verifies the window). Until then the coverage is the owner's workstation
+  (7.6.4) and the dev container (7.6).
 
 ## Alternatives considered
 
-- **Hard-pin a single version (7.6 only), floor and target identical** — rejected
-  for now: maximally reproducible, but locks out anyone on 7.4 LTS for the ~3.5
-  months both are supported, for a type surface we do not currently depend on. This
-  becomes the position automatically at the 10-Nov-2026 revisit.
+- **Floor 7.4 LTS with target 7.6 (the original decision)** — retracted by the
+  2026-07-25 amendment: the pinned EXO module forecloses 7.4, so the floor
+  advertised support it could not deliver (see Amendment).
+- **Keep the 7.4 floor and downgrade `ExchangeOnlineManagement` to 3.9.2** —
+  rejected: genuinely restores the overlap window, but ships a superseded module
+  and forgoes .NET 10 to preserve compatibility we have no user demand for.
 - **Pin to 7.4 / .NET 8 as the conservative LTS** — rejected: end-of-support
   10-Nov-2026. Pinning *to* a runtime about to expire buys no stability.
 - **Track `latest` / leave the floor at 7.0** — rejected: directly contradicts

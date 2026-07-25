@@ -1,4 +1,4 @@
-#requires -Version 7.0
+#requires -Version 7.6
 <#
     Tests for the profile canonicalization core (MCA-13; FR-5, NFR-9; ADR-0008).
     Profiles are authored/shared in YAML but canonicalized to JSON internally —
