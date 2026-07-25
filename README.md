@@ -130,6 +130,27 @@ pwsh -NoProfile -Command "Invoke-Pester -Path tests/"
 The dev container (Option A) provisions Pester automatically, so there you can run
 `Invoke-Pester -Path tests/` directly.
 
+## CLI
+
+`scripts/m365config.ps1` is the primary interface (ADR-0012): a thin dispatcher
+over the module's public functions — no business logic lives in the script.
+
+```powershell
+Import-Module ./src/M365Configurator/M365Configurator.psd1
+$session = New-M365Session -Graph (Connect-M365Graph) -Exo (Connect-M365ExchangeOnline)
+
+./scripts/m365config.ps1 dryrun -ProfilePath ./profiles/security-baseline.yaml -Session $session
+./scripts/m365config.ps1 apply  -ProfilePath ./profiles/security-baseline.yaml -Session $session -Approve
+./scripts/m365config.ps1 drift  -ProfilePath ./profiles/security-baseline.yaml -Session $session
+./scripts/m365config.ps1 save   -Name my-tenant-baseline -Session $session
+```
+
+`-NameOverride @{ 'ID-2' = 'Contoso - Block legacy auth' }` forwards to
+`dryrun`/`apply`/`drift` for per-client control renames (FR-7). `save` reads
+every in-scope control's current tenant state (`Read-M365ControlState`) and
+writes a schema-v1 profile — refusing to write anything invalid or
+credential-bearing (NFR-1).
+
 ## Repository layout
 
 ```

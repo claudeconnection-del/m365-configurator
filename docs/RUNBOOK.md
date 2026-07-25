@@ -1297,13 +1297,29 @@ missing file → empty, no throw.
 drift for a profile (D11).
 
 **Files:**
-- Create `src/M365Configurator/Private/Read-M365ControlState.ps1` (the real
+- Create `src/M365Configurator/Public/Read-M365ControlState.ps1` (the real
   tenant reader `Save-M365Profile` was built to receive — see below)
 - Create `scripts/m365config.ps1`
 - Test `tests/Read-M365ControlState.Tests.ps1`, `tests/M365ConfigCli.Tests.ps1`
-- Modify `README.md` (a short "CLI" usage section; also add the missing
-  "License" section — Apache-2.0, see LICENSE — while the file is open:
-  ADR-0010's recorded follow-up)
+- Modify `README.md` (a short "CLI" usage section; the "License" section
+  already exists — ADR-0010's follow-up was already closed by a prior story)
+
+**Correction (found while executing S19):** the spec below originally said
+`Private/Read-M365ControlState.ps1`. That cannot work: `scripts/m365config.ps1`
+runs *outside* the module (it only imports the manifest), and the loader
+(`M365Configurator.psm1`) never calls `Export-ModuleMember` for anything
+outside `Public/` — a private function is invisible to external code by
+design (verified directly: calling a private helper after `Import-Module`
+throws `CommandNotFoundException`). Since the CLI's `ControlReader =
+{ Read-M365ControlState -Session $Session }` closure is defined in the CLI
+script's own scope, and a scriptblock's command resolution is fixed to its
+*defining* scope regardless of who later invokes it, a private
+`Read-M365ControlState` would fail at runtime the first time anyone ran
+`save`. It also matches this function's actual purpose better: end users are
+meant to call it directly and interactively (`-ControlReader
+{ Read-M365ControlState -Session $session }`) when driving `Save-M365Profile`
+without the CLI script at all. So: **it is Public, exported, and declared in
+`FunctionsToExport`** — everything below reflects that.
 
 **Part A — `Read-M365ControlState`.** `Save-M365Profile` takes a mandatory
 `-ControlReader` scriptblock returning control descriptors
