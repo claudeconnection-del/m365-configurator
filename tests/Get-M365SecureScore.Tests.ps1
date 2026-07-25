@@ -63,11 +63,18 @@ Describe 'Get-M365SecureScore' {
     }
 
     It 'yields a null Percentage when MaxScore is zero (no divide-by-zero)' {
-        $reader = { [pscustomobject]@{ Id = 's'; CurrentScore = 0.0; MaxScore = 0.0; CreatedDateTime = $script:clock.Invoke() } }
+        $reader = { [pscustomobject]@{ Id = 's'; CurrentScore = 0.0; MaxScore = 0.0; CreatedDateTime = [datetime]::new(2026, 7, 25, 0, 0, 0, [DateTimeKind]::Utc) } }
 
         $report = Get-M365SecureScore -ScoreReader $reader -Clock $script:clock
 
         $report.Percentage | Should -BeNullOrEmpty
+    }
+
+    It 'fails loud when a snapshot carries no readable score — [double]$null would report a false 0% (NFR-6)' {
+        $reader = { [pscustomobject]@{ Id = 's'; MaxScore = 60.0; CreatedDateTime = [datetime]::new(2026, 7, 25, 0, 0, 0, [DateTimeKind]::Utc) } }
+
+        { Get-M365SecureScore -ScoreReader $reader -Clock $script:clock } |
+            Should -Throw -ExpectedMessage '*readable currentScore/maxScore*'
     }
 
     It 'captures the most recent snapshot when the reader returns several' {
@@ -97,7 +104,7 @@ Describe 'Get-M365SecureScore' {
     }
 
     It 'returns an empty control list (not null) when the snapshot has no control scores' {
-        $reader = { [pscustomobject]@{ Id = 's'; CurrentScore = 10.0; MaxScore = 20.0; CreatedDateTime = $script:clock.Invoke() } }
+        $reader = { [pscustomobject]@{ Id = 's'; CurrentScore = 10.0; MaxScore = 20.0; CreatedDateTime = [datetime]::new(2026, 7, 25, 0, 0, 0, [DateTimeKind]::Utc) } }
 
         $report = Get-M365SecureScore -ScoreReader $reader -Clock $script:clock
 
@@ -128,11 +135,18 @@ Describe 'Get-M365SecureScore' {
             Should -Throw -ExpectedMessage '*no Secure Score snapshot*'
     }
 
-    It 'is a read-only report: it exposes neither a Set nor a Compare seam' {
-        $report = Get-M365SecureScore -ScoreReader $script:oneSnapshot -Clock $script:clock
+    It 'is read-only by construction: no Set/Compare parameters, and AUD-3 is not a registered control' {
+        # The meaningful assertions: the FUNCTION offers no write seams, and the
+        # registry never treats Secure Score as a desired-state control (research
+        # 05 R8). Asserting on the report object alone would be a tautology.
+        $parameters = (Get-Command Get-M365SecureScore).Parameters.Keys
+        $parameters | Should -Not -Contain 'Set'
+        $parameters | Should -Not -Contain 'Compare'
 
-        $report.PSObject.Properties.Name | Should -Not -Contain 'Set'
-        $report.PSObject.Properties.Name | Should -Not -Contain 'Compare'
+        @(Get-M365ControlRegistry).Id | Should -Not -Contain 'AUD-3'
+
+        $report = Get-M365SecureScore -ScoreReader $script:oneSnapshot -Clock $script:clock
+        $report.PSObject.TypeNames | Should -Contain 'M365Configurator.SecureScoreReport'
     }
 
     It 'defaults the score reader to the module Graph seam (ADR-0014): GET v1.0/security/secureScores, unwrapping value' {

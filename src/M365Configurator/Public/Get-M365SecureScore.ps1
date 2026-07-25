@@ -75,9 +75,16 @@ function Get-M365SecureScore {
     $currentScore = Get-M365MapValue $latest 'currentScore'
     $maxScore     = Get-M365MapValue $latest 'maxScore'
 
-    # Percentage is a convenience for the report; guard against an absent or zero
-    # max (a fresh tenant can report 0) rather than dividing by zero.
-    $percentage = if ($null -ne $maxScore -and [double] $maxScore -ne 0) {
+    # A snapshot whose score fields are unreadable is as blank a verification
+    # signal as no snapshot at all — and [double]$null coerces to 0, which would
+    # report a catastrophic-looking "0%" instead of an unknown. Fail loud (NFR-6).
+    if ($null -eq $currentScore -or $null -eq $maxScore) {
+        throw 'Secure Score capture failed: the snapshot did not carry a readable currentScore/maxScore.'
+    }
+
+    # Percentage is a convenience for the report; guard against a zero max
+    # (a fresh tenant can report 0) rather than dividing by zero.
+    $percentage = if ([double] $maxScore -ne 0) {
         [math]::Round(([double] $currentScore / [double] $maxScore) * 100, 1)
     } else {
         $null
@@ -100,6 +107,7 @@ function Get-M365SecureScore {
     Write-Verbose "Captured Secure Score: $currentScore / $maxScore (boundary: $boundaryText)."
 
     [pscustomobject]@{
+        PSTypeName      = 'M365Configurator.SecureScoreReport'
         Service         = 'MicrosoftGraph'
         Kind            = 'report'   # read-only: never a desired-state or drift target
         Boundary        = if ($Boundary) { $Boundary } else { $null }
