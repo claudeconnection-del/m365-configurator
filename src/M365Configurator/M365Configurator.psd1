@@ -8,7 +8,7 @@
 
     # Exported functions are declared explicitly per public file; the root module
     # also calls Export-ModuleMember. Keep this list in sync as public functions land.
-    FunctionsToExport = @('Get-M365RequiredModule', 'Get-M365ModuleStatus', 'Get-M365ModuleRemediation', 'Initialize-M365Module', 'Connect-M365Graph', 'Disconnect-M365Graph', 'Connect-M365ExchangeOnline', 'Disconnect-M365ExchangeOnline', 'Invoke-M365Cleanup', 'ConvertTo-M365CanonicalJson', 'ConvertTo-M365ProfileYaml', 'ConvertFrom-M365ProfileYaml', 'Test-M365Profile', 'Save-M365Profile', 'Get-M365Profile', 'Import-M365Profile', 'New-M365Control')
+    FunctionsToExport = @('Get-M365RequiredModule', 'Get-M365ModuleStatus', 'Get-M365ModuleRemediation', 'Initialize-M365Module', 'Connect-M365Graph', 'Disconnect-M365Graph', 'Connect-M365ExchangeOnline', 'Disconnect-M365ExchangeOnline', 'Invoke-M365Cleanup', 'ConvertTo-M365CanonicalJson', 'ConvertTo-M365ProfileYaml', 'ConvertFrom-M365ProfileYaml', 'Test-M365Profile', 'Save-M365Profile', 'Get-M365Profile', 'Import-M365Profile', 'New-M365Control', 'Get-M365SecureScore')
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()
