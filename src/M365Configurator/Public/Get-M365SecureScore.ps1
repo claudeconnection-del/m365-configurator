@@ -33,8 +33,9 @@ function Get-M365SecureScore {
         deliberately NOT required. Delegated scope: SecurityEvents.Read.All.
 
     .OUTPUTS
-        pscustomobject: Service, Kind='report', Boundary, CapturedAt, SnapshotId,
-        SnapshotDate, TenantId, CurrentScore, MaxScore, Percentage, ActiveUserCount,
+        pscustomobject (PSTypeName 'M365Configurator.SecureScoreReport'): Service,
+        Kind='report', Boundary, CapturedAt, SnapshotId, SnapshotDate ([datetime],
+        normalized), TenantId, CurrentScore, MaxScore, Percentage, ActiveUserCount,
         ControlScores[]. No Set/Compare — read-only by construction.
     #>
     [CmdletBinding()]
@@ -103,6 +104,18 @@ function Get-M365SecureScore {
         }
     ) | Sort-Object -Property Name
 
+    # Graph JSON has no date type, so through the raw-REST seam createdDateTime
+    # arrives as an ISO-8601 STRING. Normalize to a [datetime] with RoundtripKind:
+    # a plain [datetime] cast would shift a 'Z' instant to local time and silently
+    # misdate the audit record this report feeds (NFR-5).
+    $snapshotDate = Get-M365MapValue $latest 'createdDateTime'
+    if ($snapshotDate -is [string]) {
+        $snapshotDate = [datetime]::Parse(
+            $snapshotDate,
+            [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::RoundtripKind)
+    }
+
     $boundaryText = if ($Boundary) { $Boundary } else { '(none)' }
     Write-Verbose "Captured Secure Score: $currentScore / $maxScore (boundary: $boundaryText)."
 
@@ -113,7 +126,7 @@ function Get-M365SecureScore {
         Boundary        = if ($Boundary) { $Boundary } else { $null }
         CapturedAt      = & $Clock
         SnapshotId      = Get-M365MapValue $latest 'id'
-        SnapshotDate    = Get-M365MapValue $latest 'createdDateTime'
+        SnapshotDate    = $snapshotDate
         TenantId        = Get-M365MapValue $latest 'azureTenantId'
         CurrentScore    = $currentScore
         MaxScore        = $maxScore

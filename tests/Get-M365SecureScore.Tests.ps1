@@ -149,22 +149,32 @@ Describe 'Get-M365SecureScore' {
         $report.PSObject.TypeNames | Should -Contain 'M365Configurator.SecureScoreReport'
     }
 
-    It 'defaults the score reader to the module Graph seam (ADR-0014): GET v1.0/security/secureScores, unwrapping value' {
+    It 'defaults the score reader to the module Graph seam (ADR-0014): GET v1.0/security/secureScores?$top=1, unwrapping value' {
+        # createdDateTime is an ISO-8601 STRING here on purpose — that is the real
+        # shape a raw-REST hashtable carries (Graph JSON has no date type).
         Mock Invoke-M365GraphRequest -ModuleName M365Configurator {
             @{
                 value = @(
-                    @{ id = 'seam'; currentScore = 12.0; maxScore = 48.0; createdDateTime = [datetime]::new(2026, 7, 24, 0, 0, 0, [DateTimeKind]::Utc) }
+                    @{ id = 'seam'; currentScore = 12.0; maxScore = 48.0; createdDateTime = '2026-07-24T00:00:00Z' }
                 )
             }
         }
 
         $report = Get-M365SecureScore -Clock $script:clock
 
+        # Exact-match the URI: a -match pattern would also accept a beta endpoint,
+        # a missing $top, or the interpolated-away '?=1' that double-quoting the
+        # URI in the implementation would produce. Single quotes here too.
         Should -Invoke Invoke-M365GraphRequest -ModuleName M365Configurator -Times 1 -Exactly -ParameterFilter {
-            $Method -eq 'GET' -and $Uri -match 'security/secureScores'
+            $Method -eq 'GET' -and $Uri -eq 'v1.0/security/secureScores?$top=1'
         }
         $report.SnapshotId   | Should -Be 'seam'
         $report.CurrentScore | Should -Be 12.0
         $report.Percentage   | Should -Be 25.0
+
+        # The ISO string is normalized to a UTC [datetime] preserving the instant —
+        # a plain [datetime] cast would yield Kind=Local and shift it (NFR-5).
+        $report.SnapshotDate      | Should -Be ([datetime]::new(2026, 7, 24, 0, 0, 0, [DateTimeKind]::Utc))
+        $report.SnapshotDate.Kind | Should -Be ([System.DateTimeKind]::Utc)
     }
 }
