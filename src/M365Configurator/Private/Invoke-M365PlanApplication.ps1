@@ -30,6 +30,13 @@ function Invoke-M365PlanApplication {
         a caller failed to gate first, and this fails loud rather than silently
         skipping or half-applying it.
 
+        Audit trail (MCA-35, D10): every run emits one 'run-started' record
+        (runId, profile name, actor, item count), one 'apply-item' record per
+        plan item (controlId, outcome, the item's Changes, the error message
+        when Failed), and one 'run-finished' record (overall outcome, per-
+        outcome counts) — all sharing the same runId and actor, via the
+        injected -AuditWriter seam (default: Write-M365AuditRecord).
+
     .OUTPUTS
         pscustomobject (PSTypeName 'M365Configurator.ApplyResult'): ProfileName,
         Outcome ('Applied' | 'Failed' | 'NothingToDo'), Items[]. Each item: Id,
@@ -44,28 +51,48 @@ function Invoke-M365PlanApplication {
         # The connected session, passed to each handler's Set seam.
         $Session,
 
-        [Parameter(Mandatory)] $Registry
+        [Parameter(Mandatory)] $Registry,
+
+        # Injected audit sink: receives one [hashtable] record per call. Default
+        # persists it via Write-M365AuditRecord (JSONL; NFR-1-guarded).
+        [scriptblock] $AuditWriter = { param($Record) Write-M365AuditRecord -Record $Record }
     )
 
     $handlers = @{}
     foreach ($handler in @($Registry)) { $handlers[$handler.Id] = $handler }
+
+    $runId = [guid]::NewGuid().ToString()
+    $actor = Get-M365MapValue (Get-M365MapValue $Session 'Graph') 'Account'
+
+    & $AuditWriter @{
+        timestamp   = [DateTime]::UtcNow.ToString('o')
+        actor       = $actor
+        runId       = $runId
+        action      = 'run-started'
+        controlId   = $null
+        outcome     = $null
+        changes     = @()
+        error       = $null
+        profileName = $Plan.ProfileName
+        itemCount   = @($Plan.Items).Count
+    }
 
     $items  = [System.Collections.Generic.List[object]]::new()
     $failed = $false
 
     foreach ($planItem in @($Plan.Items)) {
         if ($failed) {
+            $outcome = 'NotAttempted'; $detail = $null; $itemError = $null
             $items.Add([pscustomobject]@{
                     Id = $planItem.Id; Title = $planItem.Title; Action = $planItem.Action
-                    Outcome = 'NotAttempted'; Detail = $null; Error = $null
+                    Outcome = $outcome; Detail = $detail; Error = $itemError
                 })
-            continue
         }
-
-        if ($planItem.Action -eq 'NoChange') {
+        elseif ($planItem.Action -eq 'NoChange') {
+            $outcome = 'Skipped'; $detail = $null; $itemError = $null
             $items.Add([pscustomobject]@{
                     Id = $planItem.Id; Title = $planItem.Title; Action = $planItem.Action
-                    Outcome = 'Skipped'; Detail = $null; Error = $null
+                    Outcome = $outcome; Detail = $detail; Error = $itemError
                 })
         }
         elseif ($planItem.Action -in @('Create', 'Update')) {
@@ -75,21 +102,34 @@ function Invoke-M365PlanApplication {
             $handler = $handlers[$planItem.Id]
             try {
                 $detail = & $handler.Set $Session $planItem.Desired $planItem.Current
+                $outcome = 'Applied'; $itemError = $null
                 $items.Add([pscustomobject]@{
                         Id = $planItem.Id; Title = $planItem.Title; Action = $planItem.Action
-                        Outcome = 'Applied'; Detail = $detail; Error = $null
+                        Outcome = $outcome; Detail = $detail; Error = $itemError
                     })
             }
             catch {
                 $failed = $true
+                $outcome = 'Failed'; $detail = $null; $itemError = $_.Exception.Message
                 $items.Add([pscustomobject]@{
                         Id = $planItem.Id; Title = $planItem.Title; Action = $planItem.Action
-                        Outcome = 'Failed'; Detail = $null; Error = $_.Exception.Message
+                        Outcome = $outcome; Detail = $detail; Error = $itemError
                     })
             }
         }
         else {
             throw "Cannot apply control '$($planItem.Id)': its plan Action is '$($planItem.Action)', which must be resolved (Blocked/Unsupported items need to be gated before Invoke-M365PlanApplication is called)."
+        }
+
+        & $AuditWriter @{
+            timestamp = [DateTime]::UtcNow.ToString('o')
+            actor     = $actor
+            runId     = $runId
+            action    = 'apply-item'
+            controlId = $planItem.Id
+            outcome   = $outcome
+            changes   = @($planItem.Changes)
+            error     = $itemError
         }
     }
 
@@ -97,6 +137,23 @@ function Invoke-M365PlanApplication {
         if (@($items | Where-Object Outcome -eq 'Failed').Count -gt 0) { 'Failed' }
         elseif (@($items | Where-Object Outcome -eq 'Applied').Count -gt 0) { 'Applied' }
         else { 'NothingToDo' }
+
+    & $AuditWriter @{
+        timestamp = [DateTime]::UtcNow.ToString('o')
+        actor     = $actor
+        runId     = $runId
+        action    = 'run-finished'
+        controlId = $null
+        outcome   = $outcome
+        changes   = @()
+        error     = $null
+        counts    = [ordered]@{
+            Applied      = @($items | Where-Object Outcome -eq 'Applied').Count
+            Skipped      = @($items | Where-Object Outcome -eq 'Skipped').Count
+            Failed       = @($items | Where-Object Outcome -eq 'Failed').Count
+            NotAttempted = @($items | Where-Object Outcome -eq 'NotAttempted').Count
+        }
+    }
 
     [pscustomobject]@{
         PSTypeName  = 'M365Configurator.ApplyResult'

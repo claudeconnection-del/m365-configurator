@@ -217,6 +217,94 @@ Describe 'Invoke-M365PlanApplication (private per-item application loop)' {
             { Invoke-M365PlanApplication -Plan $plan -Registry @() } | Should -Throw '*Blocked*'
         }
     }
+
+    It 'emits run-started / apply-item / run-finished records via the injected AuditWriter, in order, with the right shape (MCA-35, D10)' {
+        InModuleScope M365Configurator {
+            $registry = @(
+                New-M365Control -Id 'ONE' -Provider 'graph' -Shape 'singleton' -Title 'One' `
+                    -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) @{ ok = $true } }
+            )
+            $session = [pscustomobject]@{ Graph = [pscustomobject]@{ Account = 'admin@contoso.com' } }
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @(
+                    [ordered]@{ id = 'ONE'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } }
+                )
+            }
+            $plan = Get-M365Plan -Profile $profile -Registry $registry -Session $session
+
+            $captured = [System.Collections.Generic.List[hashtable]]::new()
+            $auditWriter = { param($Record) $captured.Add($Record) }.GetNewClosure()
+
+            $result = Invoke-M365PlanApplication -Plan $plan -Session $session -Registry $registry -AuditWriter $auditWriter
+
+            $captured.Count | Should -Be 3
+            $captured[0].action | Should -Be 'run-started'
+            $captured[0].actor | Should -Be 'admin@contoso.com'
+            $captured[0].runId | Should -Not -BeNullOrEmpty
+            $captured[0].profileName | Should -Be 'baseline'
+            $captured[0].itemCount | Should -Be 1
+
+            $captured[1].action    | Should -Be 'apply-item'
+            $captured[1].controlId | Should -Be 'ONE'
+            $captured[1].outcome   | Should -Be 'Applied'
+            $captured[1].runId     | Should -Be $captured[0].runId
+
+            $captured[2].action  | Should -Be 'run-finished'
+            $captured[2].outcome | Should -Be 'Applied'
+            $captured[2].runId   | Should -Be $captured[0].runId
+
+            $result.Outcome | Should -Be 'Applied'
+        }
+    }
+
+    It 'logs the error on the failing apply-item record and reports run-finished Outcome Failed (MCA-35, D10)' {
+        InModuleScope M365Configurator {
+            $registry = @(
+                New-M365Control -Id 'ONE' -Provider 'graph' -Shape 'singleton' -Title 'One' `
+                    -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) throw 'tenant rejected the change' }
+            )
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @(
+                    [ordered]@{ id = 'ONE'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } }
+                )
+            }
+            $plan = Get-M365Plan -Profile $profile -Registry $registry
+
+            $captured = [System.Collections.Generic.List[hashtable]]::new()
+            $auditWriter = { param($Record) $captured.Add($Record) }.GetNewClosure()
+
+            $null = Invoke-M365PlanApplication -Plan $plan -Registry $registry -AuditWriter $auditWriter
+
+            $itemRecord = $captured | Where-Object { $_.action -eq 'apply-item' }
+            $itemRecord.outcome | Should -Be 'Failed'
+            $itemRecord.error   | Should -Match 'tenant rejected the change'
+
+            $finished = $captured | Where-Object { $_.action -eq 'run-finished' }
+            $finished.outcome | Should -Be 'Failed'
+        }
+    }
+
+    It 'defaults the AuditWriter to Write-M365AuditRecord' {
+        InModuleScope M365Configurator {
+            Mock Write-M365AuditRecord {}
+
+            $registry = @(
+                New-M365Control -Id 'ONE' -Provider 'graph' -Shape 'singleton' -Title 'One' `
+                    -Get { param($Session) @{ v = 1 } } -Set { param($Session, $Desired, $Current) @{ ok = $true } }
+            )
+            $profile = [ordered]@{
+                schemaVersion = '1.0'; name = 'baseline'; framework = 'X'; frameworkVersion = '1.0'
+                controls = @( [ordered]@{ id = 'ONE'; framework = 'X'; frameworkVersion = '1.0'; provider = 'graph'; settings = @{ v = 2 } } )
+            }
+            $plan = Get-M365Plan -Profile $profile -Registry $registry
+
+            $null = Invoke-M365PlanApplication -Plan $plan -Registry $registry
+
+            Should -Invoke Write-M365AuditRecord -Times 3
+        }
+    }
 }
 
 Describe 'Format-M365ApplyResult (readable rendering, NFR-9)' {
