@@ -85,8 +85,9 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         # tests/New-M365WeakMfaMethodsControl.Tests.ps1,
         # tests/New-M365AppConsentControl.Tests.ps1,
         # tests/New-M365AdminConsentWorkflowControl.Tests.ps1,
-        # tests/New-M365GuestInviteControl.Tests.ps1, and
-        # tests/New-M365UnifiedAuditLogControl.Tests.ps1).
+        # tests/New-M365GuestInviteControl.Tests.ps1,
+        # tests/New-M365UnifiedAuditLogControl.Tests.ps1, and
+        # tests/New-M365MailboxAuditControl.Tests.ps1).
         $script:authMethodsPolicyMatchingProfile = @{
             authenticationMethodConfigurations = @(
                 @{ id = 'Sms'; state = 'disabled' }
@@ -166,6 +167,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Name -eq 'Get-HostedOutboundSpamFilterPolicy') { return @([pscustomobject]@{ Name = 'Default'; AutoForwardingMode = 'Off' }) }
             if ($Name -eq 'Get-ExternalInOutlook') { return @([pscustomobject]@{ Identity = 'Default'; Enabled = $true; AllowList = @() }) }
             if ($Name -eq 'Get-AdminAuditLogConfig') { return [pscustomobject]@{ UnifiedAuditLogIngestionEnabled = $true } }
+            if ($Name -eq 'Get-OrganizationConfig') { return [pscustomobject]@{ AuditDisabled = $false } }
         }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -Session @{ Capabilities = @('graph', 'exo', 'defender-office365') } -InformationAction Ignore
@@ -182,6 +184,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         ($plan.Items | Where-Object { $_.Id -eq 'MDO-4' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'MDO-10' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'AUD-1' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'AUD-2' }).Action | Should -Be 'NoChange'
     }
 }
 

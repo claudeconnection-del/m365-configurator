@@ -175,3 +175,17 @@ controls:
     frameworkVersion: "1.5.0"
     settings:
       unifiedAuditLogIngestionEnabled: true
+
+  # AUD-2 — Mailbox auditing, organization default (SCuBA MS.EXO.13.1v1).
+  # Org-default only — v1 does not manage per-mailbox audit actions
+  # (Set-Mailbox -AuditOwner ...): under audit-on-by-default, Get-Mailbox
+  # reports AuditEnabled: True for every mailbox regardless of reality, and
+  # the real exclusion mechanism is Set-MailboxAuditBypassAssociation, a
+  # different surface, deferred past v1.
+  - id: AUD-2
+    name: Mailbox auditing (organization default)
+    provider: exo
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      auditEnabled: true
