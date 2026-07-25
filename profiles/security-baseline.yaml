@@ -160,3 +160,18 @@ controls:
     settings:
       enabled: true
       allowList: []
+
+  # AUD-1 — Unified audit log ingestion (SCuBA MS.DEFENDER.6.1v1). The
+  # prerequisite for every other audit/investigation capability. Most
+  # tenants have had this on by default since 2019, so this control usually
+  # plans NoChange; it exists to catch the turned-it-off case, and it is
+  # NOT on by default for Business Basic/Standard/Premium licenses.
+  # Enabling can take up to 60 minutes to propagate tenant-wide — apply
+  # reports the write outcome, not an immediate re-verification.
+  - id: AUD-1
+    name: Unified audit log ingestion
+    provider: exo
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      unifiedAuditLogIngestionEnabled: true
