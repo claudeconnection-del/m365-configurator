@@ -78,13 +78,14 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         # branch by endpoint like a real tenant would, rather than returning
         # one fixed shape for every call. Every fixture below matches its
         # respective block in profiles/security-baseline.yaml exactly, so
-        # ID-2/ID-3/AM-2/CON-1 always plan NoChange here — these two tests are
-        # about ID-1's action, not the others' (which get their own coverage
-        # in tests/New-M365LegacyAuthBlockControl.Tests.ps1,
+        # ID-2/ID-3/AM-2/CON-1/SHR-1 always plan NoChange here — these two
+        # tests are about ID-1's action, not the others' (which get their own
+        # coverage in tests/New-M365LegacyAuthBlockControl.Tests.ps1,
         # tests/New-M365RequireMfaControl.Tests.ps1,
         # tests/New-M365WeakMfaMethodsControl.Tests.ps1,
-        # tests/New-M365AppConsentControl.Tests.ps1, and
-        # tests/New-M365AdminConsentWorkflowControl.Tests.ps1).
+        # tests/New-M365AppConsentControl.Tests.ps1,
+        # tests/New-M365AdminConsentWorkflowControl.Tests.ps1, and
+        # tests/New-M365GuestInviteControl.Tests.ps1).
         $script:authMethodsPolicyMatchingProfile = @{
             authenticationMethodConfigurations = @(
                 @{ id = 'Sms'; state = 'disabled' }
@@ -92,7 +93,10 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
                 @{ id = 'Email'; state = 'disabled' }
             )
         }
+        # SHR-1 and CON-1 share this endpoint (disjoint keys) — one fixture
+        # carries both controls' matching state.
         $script:authorizationPolicyMatchingProfile = @{
+            allowInvitesFrom = 'adminsAndGuestInviters'
             defaultUserRolePermissions = @{
                 allowedToCreateApps = $false
                 permissionGrantPoliciesAssigned = @('managePermissionGrantsForSelf.microsoft-user-default-low')
@@ -164,6 +168,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         ($plan.Items | Where-Object { $_.Id -eq 'AM-2' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'CON-1' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'CON-2' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'SHR-1' }).Action | Should -Be 'NoChange'
     }
 }
 
