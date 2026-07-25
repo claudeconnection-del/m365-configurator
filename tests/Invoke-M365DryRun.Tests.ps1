@@ -82,8 +82,9 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         # about ID-1's action, not the others' (which get their own coverage
         # in tests/New-M365LegacyAuthBlockControl.Tests.ps1,
         # tests/New-M365RequireMfaControl.Tests.ps1,
-        # tests/New-M365WeakMfaMethodsControl.Tests.ps1, and
-        # tests/New-M365AppConsentControl.Tests.ps1).
+        # tests/New-M365WeakMfaMethodsControl.Tests.ps1,
+        # tests/New-M365AppConsentControl.Tests.ps1, and
+        # tests/New-M365AdminConsentWorkflowControl.Tests.ps1).
         $script:authMethodsPolicyMatchingProfile = @{
             authenticationMethodConfigurations = @(
                 @{ id = 'Sms'; state = 'disabled' }
@@ -96,6 +97,10 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
                 allowedToCreateApps = $false
                 permissionGrantPoliciesAssigned = @('managePermissionGrantsForSelf.microsoft-user-default-low')
             }
+        }
+        $script:adminConsentRequestPolicyMatchingProfile = @{
+            isEnabled = $true; notifyReviewers = $true; remindersEnabled = $true
+            requestDurationInDays = 30; reviewers = @()
         }
         $script:caPolicyMatchingProfile = @{
             value = @(
@@ -128,6 +133,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Uri -match 'identity/conditionalAccess/policies') { return $script:caPolicyMatchingProfile }
             if ($Uri -eq 'v1.0/policies/authenticationMethodsPolicy') { return $script:authMethodsPolicyMatchingProfile }
             if ($Uri -eq 'v1.0/policies/authorizationPolicy') { return $script:authorizationPolicyMatchingProfile }
+            if ($Uri -eq 'v1.0/policies/adminConsentRequestPolicy') { return $script:adminConsentRequestPolicyMatchingProfile }
         }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
@@ -146,6 +152,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             if ($Uri -match 'identity/conditionalAccess/policies') { return $script:caPolicyMatchingProfile }
             if ($Uri -eq 'v1.0/policies/authenticationMethodsPolicy') { return $script:authMethodsPolicyMatchingProfile }
             if ($Uri -eq 'v1.0/policies/authorizationPolicy') { return $script:authorizationPolicyMatchingProfile }
+            if ($Uri -eq 'v1.0/policies/adminConsentRequestPolicy') { return $script:adminConsentRequestPolicyMatchingProfile }
         }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
@@ -156,6 +163,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         ($plan.Items | Where-Object { $_.Id -eq 'ID-3' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'AM-2' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'CON-1' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'CON-2' }).Action | Should -Be 'NoChange'
     }
 }
 

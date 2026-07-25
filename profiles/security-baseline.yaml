@@ -87,3 +87,23 @@ controls:
     settings:
       allowedToCreateApps: false
       userConsentPolicies: [managePermissionGrantsForSelf.microsoft-user-default-low]
+
+  # CON-2 — Admin consent request workflow (SCuBA MS.AAD.5.3v1). Completes the
+  # consent story alongside CON-1: lets a user request admin review instead of
+  # being flatly blocked. The Graph update is a full-replace PUT, so every
+  # field below is required.
+  # !!! reviewerQueries is INTENTIONALLY EMPTY — this is a per-tenant value
+  # that CANNOT ship with a real default. Set at least one reviewer
+  # (/users/<object-id>) before applying: the control REFUSES to enable this
+  # workflow with zero reviewers (it would silently blackhole every request).
+  - id: CON-2
+    name: Admin consent request workflow
+    provider: graph
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      isEnabled: true
+      notifyReviewers: true
+      remindersEnabled: true
+      requestDurationInDays: 30
+      reviewerQueries: []
