@@ -106,6 +106,12 @@ ratified as ADRs 0001–0015) → Phase 3 Jira planning ✅ (MCA backlog:
 8 workstream epics + 29 stories; v1 slice fully decomposed, 2026-07-22) →
 **Phase 4 build** → Phase 5 harden & ship.`
 
+**Building Phase 4? Open [`docs/RUNBOOK.md`](docs/RUNBOOK.md) first.** It is
+the authoritative, ordered story queue for the rest of the phase: every
+remaining story has a full implementation spec (files, endpoints, tests,
+pre-made decisions) plus the work-loop protocol (claim → TDD → review → land).
+Work it top to bottom; do not re-derive decisions it already makes.
+
 Full plan in [`docs/ROADMAP.md`](docs/ROADMAP.md); open decisions in
 [`docs/OPEN-QUESTIONS.md`](docs/OPEN-QUESTIONS.md). **The `/resume` command
 refreshes this live** — treat the line above as a hint, not gospel.
