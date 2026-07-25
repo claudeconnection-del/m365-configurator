@@ -132,3 +132,18 @@ controls:
     settings:
       eopRuleState: Enabled
       atpRuleState: Enabled
+
+  # MDO-4 — Block external auto-forwarding (SCuBA MS.EXO.1.1v2). External
+  # auto-forwarding is a classic exfiltration vector. name: Default is the
+  # well-known outbound spam filter policy every tenant ships (name-scoped;
+  # an FR-7 remap target). Microsoft's docs note the tenant default
+  # "Automatic" already BEHAVES as "Off" — setting Off here just makes that
+  # explicit (the docs' own recommendation), it does not change behavior.
+  - id: MDO-4
+    name: Block external auto-forwarding
+    provider: exo
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      name: Default
+      autoForwardingMode: "Off"
