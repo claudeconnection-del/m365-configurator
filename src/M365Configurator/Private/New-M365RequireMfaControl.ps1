@@ -30,8 +30,8 @@ function New-M365RequireMfaControl {
         DependsOn 'ID-1': security defaults must be off before Conditional
         Access enforces (mutually exclusive).
 
-        RequiredCapabilities is empty for now — MCA-21 (S9) retrofits
-        @('graph') here once the session/capability model exists.
+        RequiredCapabilities is @('graph') (MCA-21) — same connection-presence
+        gate as ID-2.
 
         Internal helper; assembled into the provider set by
         Get-M365ControlRegistry.

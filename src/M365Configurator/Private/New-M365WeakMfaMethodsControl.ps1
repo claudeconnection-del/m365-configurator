@@ -36,8 +36,9 @@ function New-M365WeakMfaMethodsControl {
         from current, one PATCH per differing method — never rewrites a
         method that already matches.
 
-        Available on every tenant (no license gate), so RequiredCapabilities
-        is empty; no DependsOn (a singleton unrelated to ID-1/CA ordering).
+        Available on every tenant (no license gate) — RequiredCapabilities is
+        just @('graph'), a connection-presence gate (MCA-21); no DependsOn (a
+        singleton unrelated to ID-1/CA ordering).
 
         Internal helper; assembled into the provider set by
         Get-M365ControlRegistry.

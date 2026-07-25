@@ -19,8 +19,8 @@ function New-M365GuestInviteControl {
         2026-07-25): `none` | `adminsAndGuestInviters` |
         `adminsGuestInvitersAndAllMembers` | `everyone`.
 
-        Available on every tenant; no DependsOn. RequiredCapabilities
-        deliberately empty (MCA-21/S9 retrofits it).
+        Available on every tenant; no DependsOn. RequiredCapabilities is
+        @('graph') (MCA-21) — a connection-presence gate, not a license one.
 
         Internal helper; assembled into the provider set by
         Get-M365ControlRegistry.

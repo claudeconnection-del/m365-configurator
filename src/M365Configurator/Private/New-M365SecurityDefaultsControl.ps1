@@ -19,7 +19,8 @@ function New-M365SecurityDefaultsControl {
         id/displayName/description, so the canonical diff and any saved profile stay
         minimal and secret-free (NFR-1).
 
-        Available on every tenant (no license gate), so RequiredCapabilities is empty.
+        Available on every tenant (no license gate) — RequiredCapabilities is
+        just @('graph'), a connection-presence gate (MCA-21), not a license one.
 
         Internal helper; assembled into the provider set by Get-M365ControlRegistry.
 

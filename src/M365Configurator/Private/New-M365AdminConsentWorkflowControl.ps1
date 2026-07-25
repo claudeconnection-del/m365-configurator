@@ -29,7 +29,8 @@ function New-M365AdminConsentWorkflowControl {
 
         No custom Compare: the flat five-key vocabulary fits the engine's
         default map-diff. Available on every tenant; no DependsOn.
-        RequiredCapabilities deliberately empty (MCA-21/S9 retrofits it).
+        RequiredCapabilities is @('graph') (MCA-21) — a connection-presence
+        gate, not a license one.
 
         Internal helper; assembled into the provider set by
         Get-M365ControlRegistry.

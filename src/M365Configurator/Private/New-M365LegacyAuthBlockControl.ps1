@@ -35,10 +35,9 @@ function New-M365LegacyAuthBlockControl {
         Access enforces (they are mutually exclusive) — this control has no
         dependency of its own, so the ordering constraint lives on ID-2/ID-3.
 
-        RequiredCapabilities is empty for now — MCA-21 (S9) retrofits
-        @('graph') here once the session/capability model actually exists;
-        adding it earlier would only make every plan involving this control
-        silently Blocked in the interim (no session declares 'graph' yet).
+        RequiredCapabilities is @('graph') (MCA-21): a session without a
+        connected Graph session Blocks this control rather than attempting a
+        call that can never succeed.
 
         Internal helper; assembled into the provider set by
         Get-M365ControlRegistry.
