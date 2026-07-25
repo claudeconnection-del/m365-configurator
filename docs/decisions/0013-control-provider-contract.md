@@ -1,8 +1,10 @@
 # 0013. Control-provider contract: Get / Compare / Set control handlers
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-07-24 — ratified by the project owner after independent
+  review returned "ratify with follow-ups"; all findings addressed, see MCA-37)
 - **Date:** 2026-07-23
-- **Deciders:** Project owner (pending ratification) — drafted autonomously during Phase 4 build
+- **Deciders:** Project owner — drafted autonomously during Phase 4 build,
+  independently reviewed, ratified 2026-07-24
 - **Requirements:** FR-4, FR-8, FR-9, FR-10, FR-11, FR-7; NFR-1, NFR-5, NFR-6, NFR-7, NFR-9
 - **Related:** ADR-0002 (custom Graph/EXO engine), ADR-0008 (canonical form), ADR-0012 (CLI-first); Jira MCA-4, MCA-5, MCA-6, MCA-16; `docs/research/05-security-baselines.md` §4
 
