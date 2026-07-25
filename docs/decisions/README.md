@@ -29,4 +29,4 @@ reasoning survives and anyone picking up the work understands *why*, not just
 | [0010](0010-license-apache-2.md) | License: Apache-2.0 | Accepted |
 | [0011](0011-self-healing-remediation-for-recoverable-preconditions.md) | Self-healing: offer remediation for recoverable preconditions | Accepted |
 | [0012](0012-cli-first-interface-gui-deferred.md) | CLI-first interface; GUI deferred until proven in the CLI | Accepted (amends 0006) |
-| [0013](0013-control-provider-contract.md) | Control-provider contract: Get / Compare / Set control handlers | Proposed |
+| [0013](0013-control-provider-contract.md) | Control-provider contract: Get / Compare / Set control handlers | Accepted |

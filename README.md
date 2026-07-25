@@ -7,7 +7,7 @@
 
 **Status:** 🔨 **Phase 4 — build in progress.** Phases 0–3 are complete: the reproducible
 dev environment, the Phase 1 research corpus, the Phase 2 design decisions (recorded as
-[ADRs 0001–0011](docs/decisions/)), and the Phase 3 Jira (`MCA`) backlog (8 workstream
+[ADRs 0001–0013](docs/decisions/)), and the Phase 3 Jira (`MCA`) backlog (8 workstream
 epics + 28 stories). The first module has landed — [`src/M365Configurator/`](src/M365Configurator)
 with a **self-healing** module preflight (ADR-0011) — developed test-first (see
 [`tests/`](tests)). See [`docs/ROADMAP.md`](docs/ROADMAP.md); run `/resume` (or say
@@ -131,7 +131,7 @@ The dev container (Option A) provisions Pester automatically, so there you can r
 │   ├── REQUIREMENTS.md       ← functional & non-functional requirements + traceability
 │   ├── ROADMAP.md            ← phased plan: research → design → build
 │   ├── OPEN-QUESTIONS.md     ← decisions log (resolved items point to ADRs)
-│   └── decisions/            ← Architecture Decision Records (ADRs 0001–0011)
+│   └── decisions/            ← Architecture Decision Records (ADRs 0001–0013)
 ├── profiles/                 ← saved configuration profiles (config only, NEVER secrets)
 ├── .gitignore                ← security-first: secrets/tokens/logs never committed
 ├── .gitattributes
@@ -142,7 +142,7 @@ The dev container (Option A) provisions Pester automatically, so there you can r
 
 - **Understand the goal:** [`docs/VISION.md`](docs/VISION.md)
 - **See the plan:** [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- **Review the decisions:** [`docs/decisions/`](docs/decisions/) (ADRs 0001–0011)
+- **Review the decisions:** [`docs/decisions/`](docs/decisions/) (ADRs 0001–0013)
 - **Run the tests:** `Invoke-Pester -Path tests/` (see [Running the tests](#running-the-tests))
 - **Start contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md)
 
