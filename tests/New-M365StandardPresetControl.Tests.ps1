@@ -75,6 +75,29 @@ Describe 'MDO-1 Standard preset control (wired via the registry)' {
         { & $script:mdo1.Get $null } | Should -Throw '*Access is denied*'
     }
 
+    It 'Get maps an ATP rule-not-found failure to NotPresent, but rethrows an unrelated ATP error' {
+        Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
+            param($Name, $Parameters)
+            if ($Name -eq 'Get-EOPProtectionPolicyRule') { return [pscustomobject]@{ State = 'Enabled' } }
+            if ($Name -eq 'Get-ATPProtectionPolicyRule') {
+                throw "The operation couldn't be performed because object 'Standard Preset Security Policy' couldn't be found on 'contoso.onmicrosoft.com'."
+            }
+        }
+
+        $current = & $script:mdo1.Get $null
+
+        $current['eopRuleState'] | Should -Be 'Enabled'
+        $current['atpRuleState'] | Should -Be 'NotPresent'
+
+        Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
+            param($Name, $Parameters)
+            if ($Name -eq 'Get-EOPProtectionPolicyRule') { return [pscustomobject]@{ State = 'Enabled' } }
+            if ($Name -eq 'Get-ATPProtectionPolicyRule') { throw 'Access is denied.' }
+        }
+
+        { & $script:mdo1.Get $null } | Should -Throw '*Access is denied*'
+    }
+
     It 'Set enables only the differing rule (ATP disabled, EOP already enabled)' {
         Mock Invoke-M365ExoCommand -ModuleName M365Configurator { }
         $desired = @{ eopRuleState = 'Enabled'; atpRuleState = 'Enabled' }
@@ -95,6 +118,7 @@ Describe 'MDO-1 Standard preset control (wired via the registry)' {
 
         & $script:mdo1.Set $null $desired $current
 
+        Should -Invoke Invoke-M365ExoCommand -ModuleName M365Configurator -Times 1 -Exactly
         Should -Invoke Invoke-M365ExoCommand -ModuleName M365Configurator -Times 1 -Exactly -ParameterFilter {
             $Name -eq 'Disable-EOPProtectionPolicyRule' -and $Parameters.Identity -eq 'Standard Preset Security Policy'
         }

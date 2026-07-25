@@ -70,7 +70,7 @@ function New-M365StandardPresetControl {
                 $eopState = [string] (Get-M365MapValue $eopRule 'State')
             }
             catch {
-                if ($_.Exception.Message -match "couldn.t be found|not found") { $eopState = 'NotPresent' } else { throw }
+                if ($_.Exception.Message -match "couldn.t be found") { $eopState = 'NotPresent' } else { throw }
             }
 
             try {
@@ -78,7 +78,7 @@ function New-M365StandardPresetControl {
                 $atpState = [string] (Get-M365MapValue $atpRule 'State')
             }
             catch {
-                if ($_.Exception.Message -match "couldn.t be found|not found") { $atpState = 'NotPresent' } else { throw }
+                if ($_.Exception.Message -match "couldn.t be found") { $atpState = 'NotPresent' } else { throw }
             }
 
             @{ eopRuleState = $eopState; atpRuleState = $atpState }
