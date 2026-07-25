@@ -62,6 +62,12 @@ short-lived branches (`claude/mca-sub-agent-research-p1g24u`,
 have since been **deleted** (2026-07-22). All work lands directly on the default
 branch per [CONTRIBUTING.md](CONTRIBUTING.md) §2.
 
+One unmerged spike survives as a **tag, not a branch**: the never-run
+Microsoft365DSC container-proof harness (built to prove ADR-0002 pre-ratification;
+ADR-0002 was ratified without it) is archived at tag
+`archive/m365dsc-container-proof` (owner decision, 2026-07-24). Recover it from
+the tag if the planned M365DSC export-tooling reuse ever wants its probes.
+
 Never push to a branch other than your designated one without explicit
 permission. Reference Jira issues in commits where applicable (e.g. `MCA-12: …`).
 
