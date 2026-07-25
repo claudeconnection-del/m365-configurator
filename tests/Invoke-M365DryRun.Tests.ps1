@@ -72,15 +72,23 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
     BeforeAll {
         $script:profilePath = Join-Path $PSScriptRoot '..' 'profiles' 'security-baseline.yaml'
 
-        # The shipped baseline now carries ID-2 and ID-3 (Conditional Access
-        # collection controls) alongside ID-1, so the mock must branch by
-        # endpoint like a real tenant would, rather than returning one fixed
-        # shape for every call. Both CA fixtures match their respective blocks
-        # in profiles/security-baseline.yaml exactly, so ID-2/ID-3 always plan
-        # NoChange here — these two tests are about ID-1's action, not the CA
-        # controls' (which get their own coverage in
-        # tests/New-M365LegacyAuthBlockControl.Tests.ps1 and
-        # tests/New-M365RequireMfaControl.Tests.ps1).
+        # The shipped baseline now carries ID-2, ID-3 (Conditional Access
+        # collection controls), and AM-2 (an auth-methods singleton) alongside
+        # ID-1, so the mock must branch by endpoint like a real tenant would,
+        # rather than returning one fixed shape for every call. Every fixture
+        # below matches its respective block in profiles/security-baseline.yaml
+        # exactly, so ID-2/ID-3/AM-2 always plan NoChange here — these two
+        # tests are about ID-1's action, not the others' (which get their own
+        # coverage in tests/New-M365LegacyAuthBlockControl.Tests.ps1,
+        # tests/New-M365RequireMfaControl.Tests.ps1, and
+        # tests/New-M365WeakMfaMethodsControl.Tests.ps1).
+        $script:authMethodsPolicyMatchingProfile = @{
+            authenticationMethodConfigurations = @(
+                @{ id = 'Sms'; state = 'disabled' }
+                @{ id = 'Voice'; state = 'disabled' }
+                @{ id = 'Email'; state = 'disabled' }
+            )
+        }
         $script:caPolicyMatchingProfile = @{
             value = @(
                 @{
@@ -110,6 +118,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             param($Method, $Uri, $Body)
             if ($Uri -match 'identitySecurityDefaultsEnforcementPolicy') { return @{ isEnabled = $true } }
             if ($Uri -match 'identity/conditionalAccess/policies') { return $script:caPolicyMatchingProfile }
+            if ($Uri -eq 'v1.0/policies/authenticationMethodsPolicy') { return $script:authMethodsPolicyMatchingProfile }
         }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
@@ -126,6 +135,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
             param($Method, $Uri, $Body)
             if ($Uri -match 'identitySecurityDefaultsEnforcementPolicy') { return @{ isEnabled = $false } }
             if ($Uri -match 'identity/conditionalAccess/policies') { return $script:caPolicyMatchingProfile }
+            if ($Uri -eq 'v1.0/policies/authenticationMethodsPolicy') { return $script:authMethodsPolicyMatchingProfile }
         }
 
         $plan = Invoke-M365DryRun -ProfilePath $script:profilePath -InformationAction Ignore
@@ -134,6 +144,7 @@ Describe 'Invoke-M365DryRun end-to-end (shipped profile + real registry, Graph m
         ($plan.Items | Where-Object { $_.Id -eq 'ID-1' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-2' }).Action | Should -Be 'NoChange'
         ($plan.Items | Where-Object { $_.Id -eq 'ID-3' }).Action | Should -Be 'NoChange'
+        ($plan.Items | Where-Object { $_.Id -eq 'AM-2' }).Action | Should -Be 'NoChange'
     }
 }
 

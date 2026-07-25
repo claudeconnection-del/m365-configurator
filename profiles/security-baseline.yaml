@@ -59,3 +59,16 @@ controls:
       includeApplications: [All]
       grantOperator: OR
       grantControls: [mfa]
+
+  # AM-2 — Disable weak MFA methods (SCuBA MS.AAD.3.5v2). SMS, voice call, and
+  # email OTP are phishable / SIM-swap-exposed; disabling them pushes users to
+  # the Authenticator app or a phishing-resistant method.
+  - id: AM-2
+    name: Disable weak MFA methods
+    provider: graph
+    framework: CISA-SCuBA
+    frameworkVersion: "1.5.0"
+    settings:
+      sms: disabled
+      voice: disabled
+      email: disabled
