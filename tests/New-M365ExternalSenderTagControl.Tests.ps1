@@ -52,6 +52,15 @@ Describe 'MDO-10 external-sender-tag control (wired via the registry)' {
         @($current['allowList'])        | Should -Be @('alpha.com', 'zeta.com')
     }
 
+    It 'Get throws when Get-ExternalInOutlook returns zero objects (broken EXO session)' {
+        Mock Invoke-M365ExoCommand -ModuleName M365Configurator {
+            param($Name, $Parameters)
+            if ($Name -eq 'Get-ExternalInOutlook') { return @() }
+        }
+
+        { & $script:mdo10.Get $null } | Should -Throw '*Get-ExternalInOutlook*'
+    }
+
     It 'Set with only enabled declared: passes only -Enabled, no -AllowList' {
         Mock Invoke-M365ExoCommand -ModuleName M365Configurator { }
         $desired = @{ enabled = $true }

@@ -19,13 +19,17 @@ function New-M365ExternalSenderTagControl {
         it back (no `-Identity` needed to target the tenant default). v1
         manages the **first** returned object only — multi-geo tenants can
         return several, and picking the first is a deliberate v1
-        simplification (recorded here per the RUNBOOK).
+        simplification (recorded here per the RUNBOOK). Every tenant ships
+        at least one config object, so a zero-object return is treated the
+        same as MDO-4's absent-Default-policy case: a broken EXO session,
+        not a legitimate "tag is off" state — `Get` throws rather than
+        silently defaulting (NFR-6).
 
-        `Set-ExternalInOutlook` has **no `-WhatIf` support** — unlike most
-        Graph/EXO writes, a dry-run here cannot rely on the cmdlet's own
-        preview; the engine's default Get/Compare diff (ADR-0013) is the
-        entire dry-run safety net for this control, so `Get`'s projection
-        must be complete and accurate.
+        `Set-ExternalInOutlook` has **no `-WhatIf` support**, which is
+        irrelevant here: like every other control, dry-run never invokes
+        `Set` at all (Get-M365Plan only ever calls `Get`), so the engine's
+        default Get/Compare diff (ADR-0013) is already the entire dry-run
+        safety net regardless of what the cmdlet supports.
 
         RequiredCapabilities: `exo` only. No DependsOn.
 
@@ -45,6 +49,10 @@ function New-M365ExternalSenderTagControl {
         -Get {
             param($Session)
             $config = @(Invoke-M365ExoCommand -Name 'Get-ExternalInOutlook') | Select-Object -First 1
+
+            if (-not $config) {
+                throw "external sender warning config not found — Get-ExternalInOutlook should always return at least one object; this indicates a broken EXO session."
+            }
 
             @{
                 enabled   = [bool] (Get-M365MapValue $config 'Enabled')
