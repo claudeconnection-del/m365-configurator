@@ -17,12 +17,20 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  // Install the M365 PowerShell modules and dev/test tooling once the container
-  // is built, then wire up the dev shell profile so a fresh terminal auto-imports
-  // the module and hints at Connect-M365 — "reopen in container, open a terminal,
+  // Trust the bind-mounted workspace first: the workspace folder's owning UID
+  // commonly differs from the 'vscode' user's (a bind-mount/Docker Desktop
+  // quirk, not something particular to this repo), which trips git's "dubious
+  // ownership" safety check (CVE-2022-24765) and makes every git command in a
+  // fresh container fail until a human runs this by hand and re-pulls. Doing
+  // it here means "Reopen in Container" -> open a terminal -> git works, no
+  // detour required (observed live, 2026-07-26).
+  //
+  // Then install the M365 PowerShell modules and dev/test tooling, and wire up
+  // the dev shell profile so a fresh terminal auto-imports the module and
+  // hints at Connect-M365 — "reopen in container, open a terminal,
   // authenticate" should be the whole onboarding path. Runs as the non-root
   // 'vscode' user; installs into CurrentUser scope, no elevation.
-  "postCreateCommand": "pwsh -NoProfile -File scripts/install-modules.ps1 && pwsh -NoProfile -File scripts/install-dev-tools.ps1 && pwsh -NoProfile -File scripts/setup-devshell-profile.ps1",
+  "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && pwsh -NoProfile -File scripts/install-modules.ps1 && pwsh -NoProfile -File scripts/install-dev-tools.ps1 && pwsh -NoProfile -File scripts/setup-devshell-profile.ps1",
 
   "customizations": {
     "vscode": {
