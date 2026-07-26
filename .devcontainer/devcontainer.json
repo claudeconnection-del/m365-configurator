@@ -18,8 +18,11 @@
   },
 
   // Install the M365 PowerShell modules and dev/test tooling once the container
-  // is built. Runs as the non-root 'vscode' user; installs into CurrentUser scope.
-  "postCreateCommand": "pwsh -NoProfile -File scripts/install-modules.ps1 && pwsh -NoProfile -File scripts/install-dev-tools.ps1",
+  // is built, then wire up the dev shell profile so a fresh terminal auto-imports
+  // the module and hints at Connect-M365 — "reopen in container, open a terminal,
+  // authenticate" should be the whole onboarding path. Runs as the non-root
+  // 'vscode' user; installs into CurrentUser scope, no elevation.
+  "postCreateCommand": "pwsh -NoProfile -File scripts/install-modules.ps1 && pwsh -NoProfile -File scripts/install-dev-tools.ps1 && pwsh -NoProfile -File scripts/setup-devshell-profile.ps1",
 
   "customizations": {
     "vscode": {

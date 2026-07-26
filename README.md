@@ -135,9 +135,13 @@ The dev container (Option A) provisions Pester automatically, so there you can r
 `scripts/m365config.ps1` is the primary interface (ADR-0012): a thin dispatcher
 over the module's public functions — no business logic lives in the script.
 
+The dev container auto-imports the module in every new terminal (see
+[`scripts/setup-devshell-profile.ps1`](scripts/setup-devshell-profile.ps1)), so
+inside it you can skip straight to connecting:
+
 ```powershell
-Import-Module ./src/M365Configurator/M365Configurator.psd1
-$session = New-M365Session -Graph (Connect-M365Graph) -Exo (Connect-M365ExchangeOnline)
+Import-Module ./src/M365Configurator/M365Configurator.psd1   # not needed inside the dev container
+$session = Connect-M365   # connects Graph + Exchange Online, prints what happened
 
 ./scripts/m365config.ps1 dryrun -ProfilePath ./profiles/security-baseline.yaml -Session $session
 ./scripts/m365config.ps1 apply  -ProfilePath ./profiles/security-baseline.yaml -Session $session -Approve
