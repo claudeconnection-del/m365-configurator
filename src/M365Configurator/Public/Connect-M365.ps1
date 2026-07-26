@@ -32,6 +32,13 @@ function Connect-M365 {
         pscustomobject (PSTypeName 'M365Configurator.Session') — see
         New-M365Session.
 
+    .NOTES
+        The connection summary is deliberately not suppressible via
+        -InformationAction or $InformationPreference (this is the one place
+        that matters more than usual — see the DESCRIPTION). For scripted/
+        automated callers that truly need quiet output, redirect the
+        Information stream instead: `Connect-M365 6>$null`.
+
     .EXAMPLE
         $session = Connect-M365
         ./scripts/m365config.ps1 dryrun -ProfilePath ./profiles/security-baseline.yaml -Session $session
