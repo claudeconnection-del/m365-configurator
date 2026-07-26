@@ -46,6 +46,21 @@ Write-Host "    PowerShell : $($PSVersionTable.PSVersion) ($($PSVersionTable.Pla
 Write-Host "    Scope      : CurrentUser (no elevation, no system changes)"
 Write-Host ""
 
+# Bootstrap the NuGet package provider non-interactively -- same rationale as
+# install-modules.ps1: Install-Module otherwise bootstraps it lazily with a
+# confirmation prompt that hangs forever with no stdin (containers, CI).
+Write-Step "Bootstrapping the NuGet package provider (required by Install-Module)"
+$nuGetProvider = Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction SilentlyContinue |
+    Where-Object { $_.Version -ge [version] '2.8.5.201' }
+if ($nuGetProvider) {
+    Write-Skip "already present: v$($nuGetProvider.Version)"
+}
+else {
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser | Out-Null
+    Write-Ok "NuGet provider installed"
+}
+Write-Host ""
+
 Write-Step "Pester  —  test runner for tests/*.Tests.ps1 (Pester 5+ syntax)"
 $installed = Get-Module -ListAvailable -Name Pester |
     Where-Object { $_.Version -ge $pesterPin } |

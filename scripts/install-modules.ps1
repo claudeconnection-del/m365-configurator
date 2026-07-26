@@ -82,6 +82,25 @@ Write-Host "    Scope      : CurrentUser (no elevation, no system changes)"
 Write-Host ""
 
 # -----------------------------------------------------------------------------
+# Bootstrap the NuGet package provider non-interactively. Install-Module
+# otherwise bootstraps this provider lazily on first use with a confirmation
+# prompt -- and in a non-interactive context (containers, CI, postCreateCommand)
+# there is no stdin to answer it, so the prompt hangs forever instead of
+# failing loud (NFR-6). Installing it explicitly up front closes that hang.
+# -----------------------------------------------------------------------------
+Write-Step "Bootstrapping the NuGet package provider (required by Install-Module)"
+$nuGetProvider = Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction SilentlyContinue |
+    Where-Object { $_.Version -ge [version] '2.8.5.201' }
+if ($nuGetProvider) {
+    Write-Skip "already present: v$($nuGetProvider.Version)"
+}
+else {
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser | Out-Null
+    Write-Ok "NuGet provider installed"
+}
+Write-Host ""
+
+# -----------------------------------------------------------------------------
 # Ensure the PowerShell Gallery is available and trusted for this user only.
 # -----------------------------------------------------------------------------
 Write-Step "Verifying PowerShell Gallery availability"
