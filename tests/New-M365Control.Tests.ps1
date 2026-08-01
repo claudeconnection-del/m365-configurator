@@ -81,10 +81,14 @@ Describe 'New-M365Control' {
     }
 
     It 'requires Get and Set to be provided' {
-        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
-            -Set { param($Session, $Desired, $Current) } } | Should -Throw
-        { New-M365Control -Id 'X' -Provider 'graph' -Shape 'singleton' -Title 'X' `
-            -Get { param($Session) } } | Should -Throw
+        # Asserted via parameter metadata, not by invoking without -Get/-Set:
+        # a missing Mandatory parameter makes PowerShell prompt for it
+        # interactively on a real console host (only a non-interactive host,
+        # e.g. CI, throws immediately instead) — invoking it here would hang
+        # any interactive Pester run at a "Get:"/"Set:" prompt.
+        $cmd = Get-Command New-M365Control
+        $cmd.Parameters['Get'].ParameterSets['__AllParameterSets'].IsMandatory | Should -BeTrue
+        $cmd.Parameters['Set'].ParameterSets['__AllParameterSets'].IsMandatory | Should -BeTrue
     }
 
     # -- independent-review findings (MCA-37) ---------------------------------
